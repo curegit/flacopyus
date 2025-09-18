@@ -1,0 +1,39 @@
+[project]
+name = "flacopyus"
+description = "Simple CLI tool to sync FLAC files to OPUS files"
+keywords = []
+requires-python = ">=3.12"
+readme = "README.md"
+license = "GPL-3.0-or-later"
+license-files = ["LICEN[CS]E*"]
+maintainers = [
+  {name = "curegit", email = "contact@curegit.jp"}
+]
+classifiers = [
+  "Programming Language :: Python :: 3 :: Only",
+  "Typing :: Typed",
+]
+dynamic = ["version"]
+dependencies = [
+  "rich",
+]
+
+[project.optional-dependencies]
+dev = ["pip", "setuptools >= 78", "build", "twine", "black", "mypy", "coverage"]
+
+[project.scripts]
+flacopyus = "flacopyus.cli:main"
+
+[project.urls]
+homepage = "https://github.com/curegit/flacopyus"
+repository = "https://github.com/curegit/flacopyus.git"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["flacopyus"]
+
+[tool.setuptools.dynamic]
+version = {attr = "flacopyus.__version__"}
