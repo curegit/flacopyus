@@ -4,6 +4,7 @@ from paranoia.utils.filesys import tree, treemap
 
 import time
 import os
+import shutil
 from pathlib import Path
 from functools import cache
 from concurrent.futures import ThreadPoolExecutor, Future
@@ -24,6 +25,10 @@ def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
         else:
             falses.append(item)
     return trues, falses
+
+
+class Error:
+    pass
 
 
 def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] | bool = False):
@@ -51,8 +56,19 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
         will_del_dict[d] = False
         return True
 
-    def cp_i(pool, pending: list[tuple[Path, Future[bool]]]):
+    def cp_i(pool, cp_pool, pending: list[tuple[Path, Future[bool]]]):
         def f(s: Path, d: Path):
+            if s.suffix.lower() in [".mp3", ".m4a"]:
+                def cp(s,d):
+                    if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
+                        shutil.copy2(s, d)
+                    return True
+                future = cp_pool.submit(cp, s, d)
+                pending.append((s, future))
+                return future
+
+
+
             future = pool.submit(cp_main, s, d)
             pending.append((s, future))
             return future
@@ -62,8 +78,9 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
     poll = 0.1
     concurrency = os.cpu_count()
     pending: list[tuple[Path, Future[bool]]] = []
-    with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        treemap(cp_i(executor, pending), src, dest=dest, extmap={"flac": "opus"}, raises_on_error=True, progress=False)
+    with ThreadPoolExecutor(max_workers=1) as executor_cp:
+      with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        treemap(cp_i(executor, executor_cp, pending), src, dest=dest, extmap={"flac": "opus", "m4a": "m4a", "mp3": "mp3"}, mkdir=True, mkdir_empty=False, raises_on_error=True, progress=False)
         # Finish remaining tasks
         progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
         task = progress_display.add_task("Processing", total=len(pending))
