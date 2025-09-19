@@ -1,6 +1,6 @@
 # TODO: Drop dependency on private modules
 from paranoia.utils.spr import which, build_treemap_spfunc
-from paranoia.utils.filesys import treemap
+from paranoia.utils.filesys import tree, treemap
 
 import time
 import os
@@ -14,6 +14,7 @@ import rich.console
 
 console = rich.console.Console(stderr=True)
 
+
 def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
     trues: list[T] = []
     falses: list[T] = []
@@ -25,8 +26,39 @@ def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
     return trues, falses
 
 
+def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] | bool = False):
+    # copy_extensions: list[str] | None = "opus"
 
-def main(src: Path, dest: Path):
+    ds: list[Path] = []
+    if dest.exists():
+        if delete_excluded or copy_exts is True:
+            ds = tree(dest)
+        else:
+            ds = tree(dest, ext=copy_exts)
+    will_del_dict: dict[Path, bool] = {p: True for p in ds}
+
+    def cp_main(s: Path, d: Path):
+        stat_s = s.stat()
+        s_ns = stat_s.st_mtime_ns
+        # TODO: bitrate 変更を検知できるようにする
+        # TODO: 送り先がフォルダで衝突しているとき
+        if not d.exists() or s_ns != d.stat().st_mtime_ns:
+            cp = opusenc_func()(s, d)
+            with open(d, "wb") as f:
+                f.write(cp.stdout)
+            copy_mod(s_ns, d)
+        # TODO: Thread safe?
+        will_del_dict[d] = False
+        return True
+
+    def cp_i(pool, pending: list[tuple[Path, Future[bool]]]):
+        def f(s: Path, d: Path):
+            future = pool.submit(cp_main, s, d)
+            pending.append((s, future))
+            return future
+
+        return f
+
     poll = 0.1
     concurrency = os.cpu_count()
     pending: list[tuple[Path, Future[bool]]] = []
@@ -40,36 +72,18 @@ def main(src: Path, dest: Path):
                 time.sleep(poll)
                 done, pending = filter_split(lambda x: x[1].done(), pending)
                 progress_display.update(task, advance=len(done), refresh=True)
+
+    for p, is_deleted in will_del_dict.items():
+        if is_deleted:
+            p.unlink()
+
     return 0
+
 
 @cache
 def opusenc_func():
     opusenc = which("opusenc")
     return build_treemap_spfunc([opusenc], "--bitrate 128 - -", emulate_redirect_stdin=True, emulate_redirect_stdout=True, capture_output=True)
-
-
-def cp_main(s: Path, d: Path):
-    stat_s = s.stat()
-    s_ns = stat_s.st_mtime_ns
-    # TODO: bitrate 変更を検知できるようにする
-    # TODO: 送り先がフォルダで衝突しているとき
-    if not d.exists() or s_ns != d.stat().st_mtime_ns:
-        cp = opusenc_func()(s, d)
-        with open(d, "wb") as f:
-            f.write(cp.stdout)
-        copy_mod(s_ns, d)
-    return True
-
-
-
-
-def cp_i(pool, pending: list[tuple[Path, Future[bool]]]):
-    def f(s: Path, d: Path):
-        future = pool.submit(cp_main, s, d)
-        pending.append((s, future))
-        return future
-    return f
-
 
 
 def copy_mod(s: int | Path, d: Path):
