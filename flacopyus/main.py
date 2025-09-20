@@ -1,6 +1,6 @@
 # TODO: Drop dependency on private modules
 from paranoia.utils.spr import which, build_treemap_spfunc
-from paranoia.utils.filesys import tree, treemap
+from paranoia.utils.filesys import itreemap, treemap, tree
 
 import time
 import os
@@ -39,13 +39,14 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
         if delete_excluded or copy_exts is True:
             ds = tree(dest)
         else:
+            # TODO: fixme
             ds = tree(dest, ext=copy_exts)
     will_del_dict: dict[Path, bool] = {p: True for p in ds}
 
     def cp_main(s: Path, d: Path):
         stat_s = s.stat()
         s_ns = stat_s.st_mtime_ns
-        # TODO: bitrate 変更を検知できるようにする
+        # TODO: --bitrate 変更を検知できるようにする()-- しない。マニュアル対応の方が増分エンコードできて良い
         # TODO: 送り先がフォルダで衝突しているとき
         if not d.exists() or s_ns != d.stat().st_mtime_ns:
             cp = opusenc_func()(s, d)
@@ -93,6 +94,24 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
     for p, is_deleted in will_del_dict.items():
         if is_deleted:
             p.unlink()
+
+    del_dir = True
+    purge_dir = True
+
+    try_del = set()
+
+    if del_dir or purge_dir:
+        found_emp = None
+        while found_emp is not False:
+            found_emp = False
+            for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False):
+                if is_empty:
+                    if purge_dir or not s.exists() or not s.is_dir():
+                        if  d not  in try_del:
+                            found_emp = True
+                            try_del.add(d)
+                            d.rmdir()
+                            break
 
     return 0
 
