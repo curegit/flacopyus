@@ -57,31 +57,30 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
         will_del_dict[d] = False
         return True
 
-    def cp_i(pool, cp_pool, pending: list[tuple[Path, Future[bool]]]):
+    def cp_i(pool, copy_list, pending: list[tuple[Path, Future[bool]]]):
         def f(s: Path, d: Path):
             if s.suffix.lower() in [".mp3", ".m4a"]:
-                def cp(s,d):
-                    if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
-                        shutil.copy2(s, d)
-                    return True
-                future = cp_pool.submit(cp, s, d)
-                pending.append((s, future))
-                return future
+
+                copy_list.append((s, d))
+                return
+                #pending.append((s, future))
+                #return future
 
 
 
             future = pool.submit(cp_main, s, d)
             pending.append((s, future))
-            return future
+            #return future
 
         return f
 
     poll = 0.1
     concurrency = os.cpu_count()
     pending: list[tuple[Path, Future[bool]]] = []
-    with ThreadPoolExecutor(max_workers=1) as executor_cp:
-      with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        treemap(cp_i(executor, executor_cp, pending), src, dest=dest, extmap={"flac": "opus", "m4a": "m4a", "mp3": "mp3"}, mkdir=True, mkdir_empty=False, raises_on_error=True, progress=False)
+    copy_list = []
+
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        treemap(cp_i(executor, copy_list, pending), src, dest=dest, extmap={"flac": "opus", "m4a": "m4a", "mp3": "mp3"}, mkdir=True, mkdir_empty=False, raises_on_error=True, progress=False)
         # Finish remaining tasks
         progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
         task = progress_display.add_task("Processing", total=len(pending))
@@ -90,6 +89,16 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
                 time.sleep(poll)
                 done, pending = filter_split(lambda x: x[1].done(), pending)
                 progress_display.update(task, advance=len(done), refresh=True)
+
+    with ThreadPoolExecutor(max_workers=1) as executor_cp:
+        def cp(s,d):
+            if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
+                shutil.copy2(s, d)
+            return True
+        for s,d in copy_list:
+            future = executor_cp.submit(cp, s, d)
+
+
 
     for p, is_deleted in will_del_dict.items():
         if is_deleted:
