@@ -52,8 +52,6 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
         # TODO: 送り先がフォルダで衝突しているとき
         if not d.exists() or s_ns != d.stat().st_mtime_ns:
             cp = opusenc_func()(s, d)
-            with open(d, "wb") as f:
-                f.write(cp.stdout)
             copy_mod(s_ns, d)
         # TODO: Thread safe?
         will_del_dict[d] = False
