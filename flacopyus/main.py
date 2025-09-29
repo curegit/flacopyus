@@ -1,12 +1,14 @@
 # TODO: Drop dependency on private modules
-from paranoia.utils.spr import which, build_treemap_spfunc
 from paranoia.utils.filesys import itreemap, treemap, tree
 
 import time
 import os
 import shutil
+import subprocess as sp
 from pathlib import Path
+from contextlib import nullcontext
 from functools import cache
+from threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
 from collections.abc import Callable, Iterable
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
@@ -57,20 +59,10 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
         will_del_dict[d] = False
         return True
 
-    def cp_i(pool, copy_list, pending: list[tuple[Path, Future[bool]]]):
+    def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
         def f(s: Path, d: Path):
-            if s.suffix.lower() in [".mp3", ".m4a"]:
-
-                copy_list.append((s, d))
-                return
-                #pending.append((s, future))
-                #return future
-
-
-
             future = pool.submit(cp_main, s, d)
             pending.append((s, future))
-            #return future
 
         return f
 
@@ -80,25 +72,54 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
     copy_list = []
 
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        treemap(cp_i(executor, copy_list, pending), src, dest=dest, extmap={"flac": "opus", "m4a": "m4a", "mp3": "mp3"}, mkdir=True, mkdir_empty=False, raises_on_error=True, progress=False)
-        # Finish remaining tasks
-        progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
-        task = progress_display.add_task("Processing", total=len(pending))
-        with progress_display:
-            while pending:
-                time.sleep(poll)
-                done, pending = filter_split(lambda x: x[1].done(), pending)
-                progress_display.update(task, advance=len(done), refresh=True)
+        try:
+            treemap(cp_i(executor, pending), src, dest=dest, extmap={"flac": "opus"}, mkdir=True, mkdir_empty=False, progress=False)
+            # Finish remaining tasks
+            progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
+            task = progress_display.add_task("Processing", total=len(pending))
+            with progress_display:
+                while pending:
+                    time.sleep(poll)
+                    done, pending = filter_split(lambda x: x[1].done(), pending)
+                    progress_display.update(task, advance=len(done), refresh=True)
+        except KeyboardInterrupt:
+            # Exit quickly when interrupted
+            executor.shutdown(cancel_futures=True)
+            raise
 
+    def ff_(s: Path, d: Path):
+        if not d.exists():
+            shutil.copy2(s, d)
+        if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
+            shutil.copy2(s, d)
+        will_del_dict[d] = False
+        return True
+
+    def cp(pool, pending):
+        def f(s, d):
+            future = pool.submit(ff_, s, d)
+            pending.append((s, future))
+
+        return f
+
+    pending: list[tuple[Path, Future[bool]]] = []
     with ThreadPoolExecutor(max_workers=1) as executor_cp:
-        def cp(s,d):
-            if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
-                shutil.copy2(s, d)
-            return True
-        for s,d in copy_list:
-            future = executor_cp.submit(cp, s, d)
-
-
+        try:
+            treemap(cp(executor_cp, pending), src, dest=dest, extmap=["mp3", "m4a"], mkdir=True, mkdir_empty=False, progress=False)
+            progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
+            task = progress_display.add_task("Copying", total=len(pending))
+            with progress_display:
+                while pending:
+                    time.sleep(poll)
+                    done, pending = filter_split(lambda x: x[1].done(), pending)
+                    for d, fu in done:
+                        # Unwrap for collecting exceptions
+                        fu.result()
+                    progress_display.update(task, advance=len(done), refresh=True)
+        except KeyboardInterrupt:
+            # Exit quickly when interrupted
+            executor.shutdown(cancel_futures=True)
+            raise
 
     for p, is_deleted in will_del_dict.items():
         if is_deleted:
@@ -116,7 +137,7 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
             for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False):
                 if is_empty:
                     if purge_dir or not s.exists() or not s.is_dir():
-                        if  d not  in try_del:
+                        if d not in try_del:
                             found_emp = True
                             try_del.add(d)
                             d.rmdir()
@@ -125,10 +146,50 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
     return 0
 
 
+def build_cmds(*cmdline_or_arglist: str | Iterable[str]) -> list[str]:
+    args = []
+    for arg in cmdline_or_arglist:
+        match arg:
+            case str() as cmdline:
+                cmds = cmdline.split()
+                args.extend(cmds)
+            case Iterable():
+                args.extend(arg)
+            case _:
+                raise ValueError(f"Invalid argument: {arg}")
+    return args
+
+
+def which(cmd: str) -> str:
+    match shutil.which(cmd):
+        case None:
+            raise RuntimeError(f"Command not found: {cmd}")
+        case path:
+            return path
+
+
 @cache
-def opusenc_func():
+def opusenc_func(l: bool = True):
+    lock = RLock()
     opusenc = which("opusenc")
-    return build_treemap_spfunc([opusenc], "--bitrate 128 - -", emulate_redirect_stdin=True, emulate_redirect_stdout=True, capture_output=True)
+    cmd = build_cmds([opusenc], "--bitrate 128 - -")
+
+    def r(s: Path, d: Path):
+        i = None
+        with open(s, "rb") as to_stdin:
+            if l:
+                with lock:
+                    i = to_stdin.read()
+                sd = None
+            else:
+                sd = to_stdin
+            cp = sp.run(cmd, text=False, input=i, stdin=sd, capture_output=True, check=True)
+        with lock if l else nullcontext():
+            with open(d, "wb") as fp:
+                fp.write(cp.stdout)
+        return cp
+
+    return r
 
 
 def copy_mod(s: int | Path, d: Path):
