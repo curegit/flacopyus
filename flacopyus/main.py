@@ -174,7 +174,7 @@ def which(cmd: str) -> str:
 def opusenc_func(l: bool = True):
     lock = RLock()
     opusenc = which("opusenc")
-    cmd = build_cmds([opusenc], "--bitrate 101.6 - -")
+    cmd = build_cmds([opusenc], "--bitrate 128 - -")
 
     def r(s: Path, d: Path):
         i = None
