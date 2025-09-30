@@ -33,7 +33,7 @@ class Error:
     pass
 
 
-def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] | bool = False):
+def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] | bool = False):
     # copy_extensions: list[str] | None = "opus"
 
     ds: list[Path] = []
@@ -69,9 +69,13 @@ def main(src: Path, dest: Path, *, delete: bool = False, delete_excluded: bool =
     pending: list[tuple[Path, Future[bool]]] = []
     copy_list = []
 
+    extmap = {"flac": "opus"}
+    if wav:
+        extmap |= {"wav": "opus"}
+
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         try:
-            treemap(cp_i(executor, pending), src, dest=dest, extmap={"flac": "opus"}, mkdir=True, mkdir_empty=False, progress=False)
+            treemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, progress=False)
             # Finish remaining tasks
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
             task = progress_display.add_task("Processing", total=len(pending))
@@ -170,7 +174,7 @@ def which(cmd: str) -> str:
 def opusenc_func(l: bool = True):
     lock = RLock()
     opusenc = which("opusenc")
-    cmd = build_cmds([opusenc], "--bitrate 128 - -")
+    cmd = build_cmds([opusenc], "--bitrate 101.6 - -")
 
     def r(s: Path, d: Path):
         i = None
