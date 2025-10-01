@@ -7,7 +7,6 @@ import shutil
 import subprocess as sp
 from pathlib import Path
 from contextlib import nullcontext
-from functools import cache
 from threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
 from collections.abc import Callable, Iterable
@@ -33,17 +32,33 @@ class Error:
     pass
 
 
-def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] | bool = False):
-    # copy_extensions: list[str] | None = "opus"
+def main(src: Path, dest: Path, *, bitrate: int=128, wav: bool, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] = [], fix_case: bool = False):
+    encode = build_opusenc_func(bitrate=bitrate, )
+    delete = delete or delete_excluded
+
+    copy_exts = [e.lower() for e in copy_exts]
+
+    extmap = {"flac": "opus"}
+    if wav:
+        extmap |= {"wav": "opus"}
+
+    for k in extmap:
+        if k in copy_exts:
+            raise ValueError()
 
     ds: list[Path] = []
-    if dest.exists():
-        if delete_excluded or copy_exts is True:
-            ds = tree(dest)
-        else:
-            # TODO: fixme
-            ds = tree(dest, ext=copy_exts)
+    if delete:
+        if dest.exists():
+            if delete_excluded:
+                ds = tree(dest)
+            else:
+                ds = tree(dest, ext=["opus", *copy_exts])
     will_del_dict: dict[Path, bool] = {p: True for p in ds}
+
+    def fix_case_file(path: Path):
+        physical = path.resolve(strict=True)
+        if physical.name != path.name:
+            physical.rename(path)
 
     def cp_main(s: Path, d: Path):
         stat_s = s.stat()
@@ -51,8 +66,10 @@ def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_exclu
         # TODO: --bitrate 変更を検知できるようにする()-- しない。マニュアル対応の方が増分エンコードできて良い
         # TODO: 送り先がフォルダで衝突しているとき
         if not d.exists() or s_ns != d.stat().st_mtime_ns:
-            cp = opusenc_func()(s, d)
+            cp = encode(s, d)
             copy_mod(s_ns, d)
+        if fix_case:
+            fix_case_file(d)
         # TODO: Thread safe?
         will_del_dict[d] = False
         return True
@@ -69,13 +86,9 @@ def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_exclu
     pending: list[tuple[Path, Future[bool]]] = []
     copy_list = []
 
-    extmap = {"flac": "opus"}
-    if wav:
-        extmap |= {"wav": "opus"}
-
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         try:
-            treemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, progress=False)
+            treemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False)
             # Finish remaining tasks
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
             task = progress_display.add_task("Processing", total=len(pending))
@@ -90,10 +103,15 @@ def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_exclu
             raise
 
     def ff_(s: Path, d: Path):
+        # TODO: 送り先がフォルダで衝突しているとき
         if not d.exists():
-            shutil.copy2(s, d)
+            shutil.copyfile(s, d)
+            copy_mod(s, d)
         if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
-            shutil.copy2(s, d)
+            shutil.copyfile(s, d)
+            copy_mod(s, d)
+            if fix_case:
+                fix_case_file(d)
         will_del_dict[d] = False
         return True
 
@@ -107,7 +125,7 @@ def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_exclu
     pending: list[tuple[Path, Future[bool]]] = []
     with ThreadPoolExecutor(max_workers=1) as executor_cp:
         try:
-            treemap(cp(executor_cp, pending), src, dest=dest, extmap=["mp3", "m4a"], mkdir=True, mkdir_empty=False, progress=False)
+            treemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False)
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
             task = progress_display.add_task("Copying", total=len(pending))
             with progress_display:
@@ -144,22 +162,11 @@ def main(src: Path, dest: Path, *, wav: bool, delete: bool = False, delete_exclu
                             try_del.add(d)
                             d.rmdir()
                             break
+                        # TODO: 広いファイル名空間へのマッピング時にフォルダがのこる可能性あり
+                        pass
 
     return 0
 
-
-def build_cmds(*cmdline_or_arglist: str | Iterable[str]) -> list[str]:
-    args = []
-    for arg in cmdline_or_arglist:
-        match arg:
-            case str() as cmdline:
-                cmds = cmdline.split()
-                args.extend(cmds)
-            case Iterable():
-                args.extend(arg)
-            case _:
-                raise ValueError(f"Invalid argument: {arg}")
-    return args
 
 
 def which(cmd: str) -> str:
@@ -170,28 +177,28 @@ def which(cmd: str) -> str:
             return path
 
 
-@cache
-def opusenc_func(l: bool = True):
-    lock = RLock()
-    opusenc = which("opusenc")
-    cmd = build_cmds([opusenc], "--bitrate 128 - -")
 
-    def r(s: Path, d: Path):
-        i = None
-        with open(s, "rb") as to_stdin:
-            if l:
+def build_opusenc_func(*, bitrate:int, use_lock: bool = True):
+    opusenc_bin = which("opusenc")
+    cmd_line = [opusenc_bin, "--bitrate", str(bitrate), "-", "-"]
+    lock = RLock()
+
+    def encode(src_file: Path, dest_opus_file: Path):
+        buf = None
+        with open(src_file, "rb") as src_fp:
+            if use_lock:
                 with lock:
-                    i = to_stdin.read()
-                sd = None
+                    buf = src_fp.read()
+                in_stream = None
             else:
-                sd = to_stdin
-            cp = sp.run(cmd, text=False, input=i, stdin=sd, capture_output=True, check=True)
-        with lock if l else nullcontext():
-            with open(d, "wb") as fp:
-                fp.write(cp.stdout)
+                in_stream = src_fp
+            cp = sp.run(cmd_line, text=False, input=buf, stdin=in_stream, capture_output=True, check=True)
+        with lock if use_lock else nullcontext():
+            with open(dest_opus_file, "wb") as dest_fp:
+                dest_fp.write(cp.stdout)
         return cp
 
-    return r
+    return encode
 
 
 def copy_mod(s: int | Path, d: Path):

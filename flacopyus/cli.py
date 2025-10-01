@@ -6,6 +6,13 @@ from pathlib import Path
 import sys
 
 
+def opus_bitrate(kbps: str):
+    b = int(kbps)
+    if 6 <= b <= 256:
+        return b
+    raise ValueError()
+
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -18,11 +25,9 @@ def main(argv: list[str] | None = None) -> int:
         parser.add_argument("-v", "--version", action="version", version=version)
         parser.add_argument("src", metavar="SRC", type=str, help="source directory")
         parser.add_argument("dest", metavar="DEST", type=str, help="destination directory")
-        parser.add_argument("-b", "--bitrate", metavar="KBPS", type=int, help="")
+        parser.add_argument("-b", "--bitrate", metavar="KBPS", type=opus_bitrate, default=128, help="")
         parser.add_argument("--wav", action="store_true", help="")
-        # group = parser.add_mutually_exclusive_group()
-        # group.add_argument("--copy", )
-        # group.add_argument("--copy-all", )
+        parser.add_argument("--copy", metavar="EXT", nargs="+", action="extend", help="mirror files whose extension is .EXT (case-insensitive)")
         group = parser.add_mutually_exclusive_group()
         group.add_argument("--delete", action="store_true", help="")
         group.add_argument("--delete-excluded", action="store_true", help="")
@@ -34,9 +39,12 @@ def main(argv: list[str] | None = None) -> int:
         return main_func(
             src=Path(args.src),
             dest=Path(args.dest),
+            bitrate=args.bitrate,
             wav=args.wav,
             delete=(args.delete or args.delete_excluded),
             delete_excluded=args.delete_excluded,
+            copy_exts=([] if args.copy is None else args.copy),
+            fix_case=args.fix_case,
         )
 
     except KeyboardInterrupt:
