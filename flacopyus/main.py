@@ -32,8 +32,22 @@ class Error:
     pass
 
 
-def main(src: Path, dest: Path, *, bitrate: int=128, wav: bool, delete: bool = False, delete_excluded: bool = False, copy_exts: list[str] = [], fix_case: bool = False):
-    encode = build_opusenc_func(bitrate=bitrate, )
+def main(
+    src: Path,
+    dest: Path,
+    *,
+    bitrate: int = 128,
+    wav: bool,
+    delete: bool = False,
+    delete_excluded: bool = False,
+    copy_exts: list[str] = [],
+    fix_case: bool = False,
+    encoding_concurrency: int | None = None,
+    copying_concurrency: int = 1,
+):
+    encode = build_opusenc_func(
+        bitrate=bitrate,
+    )
     delete = delete or delete_excluded
 
     copy_exts = [e.lower() for e in copy_exts]
@@ -82,9 +96,8 @@ def main(src: Path, dest: Path, *, bitrate: int=128, wav: bool, delete: bool = F
         return f
 
     poll = 0.1
-    concurrency = os.cpu_count()
+    concurrency = max(1, 1 if (cpus := os.cpu_count()) is None else cpus - 1) if encoding_concurrency is None else encoding_concurrency
     pending: list[tuple[Path, Future[bool]]] = []
-    copy_list = []
 
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         try:
@@ -123,7 +136,7 @@ def main(src: Path, dest: Path, *, bitrate: int=128, wav: bool, delete: bool = F
         return f
 
     pending: list[tuple[Path, Future[bool]]] = []
-    with ThreadPoolExecutor(max_workers=1) as executor_cp:
+    with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
         try:
             treemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False)
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
@@ -168,7 +181,6 @@ def main(src: Path, dest: Path, *, bitrate: int=128, wav: bool, delete: bool = F
     return 0
 
 
-
 def which(cmd: str) -> str:
     match shutil.which(cmd):
         case None:
@@ -177,8 +189,7 @@ def which(cmd: str) -> str:
             return path
 
 
-
-def build_opusenc_func(*, bitrate:int, use_lock: bool = True):
+def build_opusenc_func(*, bitrate: int, use_lock: bool = True):
     opusenc_bin = which("opusenc")
     cmd_line = [opusenc_bin, "--bitrate", str(bitrate), "-", "-"]
     lock = RLock()
