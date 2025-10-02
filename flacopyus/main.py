@@ -189,6 +189,17 @@ def which(cmd: str) -> str:
             return path
 
 
+try:
+    # Available on Unix
+    sync_func = os.fdatasync
+except AttributeError:
+    sync_func = os.fsync
+
+def fdatasync(f):
+    fd = f if isinstance(f, int) else f.fileno()
+    sync_func(fd)
+
+
 def build_opusenc_func(*, bitrate: int, use_lock: bool = True):
     opusenc_bin = which("opusenc")
     cmd_line = [opusenc_bin, "--bitrate", str(bitrate), "-", "-"]
@@ -207,6 +218,8 @@ def build_opusenc_func(*, bitrate: int, use_lock: bool = True):
         with lock if use_lock else nullcontext():
             with open(dest_opus_file, "wb") as dest_fp:
                 dest_fp.write(cp.stdout)
+                dest_fp.flush()
+                fdatasync(dest_fp)
         return cp
 
     return encode
