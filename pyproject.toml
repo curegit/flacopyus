@@ -15,7 +15,7 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-  "rich",
+  "rich >= 14",
 ]
 
 [project.optional-dependencies]
