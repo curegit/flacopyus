@@ -1,36 +1,20 @@
-# TODO: Drop dependency on private modules
-from paranoia.utils.filesys import itreemap, treemap, tree
-
 import time
 import os
 import shutil
 import subprocess as sp
+import rich.console
 from pathlib import Path
 from contextlib import nullcontext
 from threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
-from collections.abc import Callable, Iterable
+from flacopyus.funs import filter_split
+from flacopyus.filesys import itreemap, itree
 from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
-
-import rich.console
 
 console = rich.console.Console(stderr=True)
 
-
-def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
-    trues: list[T] = []
-    falses: list[T] = []
-    for item in iterable:
-        if predicate(item):
-            trues.append(item)
-        else:
-            falses.append(item)
-    return trues, falses
-
-
 class Error:
     pass
-
 
 def main(
     src: Path,
@@ -64,9 +48,9 @@ def main(
     if delete:
         if dest.exists():
             if delete_excluded:
-                ds = tree(dest)
+                ds = list(itree(dest))
             else:
-                ds = tree(dest, ext=["opus", *copy_exts])
+                ds = list(itree(dest, ext=["opus", *copy_exts]))
     will_del_dict: dict[Path, bool] = {p: True for p in ds}
 
     def fix_case_file(path: Path):
@@ -101,7 +85,8 @@ def main(
 
     with ThreadPoolExecutor(max_workers=concurrency) as executor:
         try:
-            treemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False)
+            for _ in itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False):
+                pass
             # Finish remaining tasks
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
             task = progress_display.add_task("Processing", total=len(pending))
@@ -115,13 +100,20 @@ def main(
             executor.shutdown(cancel_futures=True)
             raise
 
+    def copyfile_fsync(s: Path, d: Path):
+        with open(s, "rb") as s_fp:
+            with open(d, "wb") as d_fp:
+                shutil.copyfileobj(s_fp, d_fp)
+                d_fp.flush()
+                fdatasync(d_fp)
+
     def ff_(s: Path, d: Path):
         # TODO: 送り先がフォルダで衝突しているとき
         if not d.exists():
-            shutil.copyfile(s, d)
+            copyfile_fsync(s, d)
             copy_mod(s, d)
         if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
-            shutil.copyfile(s, d)
+            copyfile_fsync(s, d)
             copy_mod(s, d)
             if fix_case:
                 fix_case_file(d)
@@ -138,7 +130,8 @@ def main(
     pending: list[tuple[Path, Future[bool]]] = []
     with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
         try:
-            treemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False)
+            for _ in itreemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
+                pass
             progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
             task = progress_display.add_task("Copying", total=len(pending))
             with progress_display:

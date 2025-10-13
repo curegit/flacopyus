@@ -1,7 +1,13 @@
+import os
+import shutil
+import contextlib
 import rich.console
 from pathlib import Path
 from collections.abc import Iterator, Callable
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
+from flacopyus.funs import greedy
 
+from flacopyus.stdio import progress_bar, error_console
 
 
 def itree(
@@ -107,7 +113,7 @@ def itreemap[T](
     progress_display = None
     if progress:
         total = sum(1 for _ in itree(path, ext=exts, recursive=recursive, file=file, directory=directory, follow_symlinks=follow_symlinks, raises_on_error=raises_on_error))
-        progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
+        progress_display = progress_bar(console=console)
         task = progress_display.add_task(progress_label, total=total)
         if copy_filtered_files:
             copy_task = progress_display.add_task(progress_copying_label, total=None)
