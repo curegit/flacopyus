@@ -1,7 +1,7 @@
 [project]
 name = "flacopyus"
 description = "CLI tool to mirror your FLAC audio library to a portable lossy Opus version"
-keywords = []
+keywords = ["FLAC", "Opus", "music library", "file syncing", "portable audio player"]
 requires-python = ">=3.14"
 readme = "README.md"
 license = "GPL-3.0-or-later"
@@ -11,6 +11,7 @@ maintainers = [
 ]
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Multimedia :: Sound/Audio :: Conversion",
   "Typing :: Typed",
 ]
 dynamic = ["version"]
