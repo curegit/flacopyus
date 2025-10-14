@@ -1,7 +1,9 @@
 from collections.abc import Callable, Iterable
 
+
 def greedy(*args, **kwargs):
     return greedy
+
 
 def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
     trues: list[T] = []

@@ -1,9 +1,7 @@
+from pathlib import Path
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
 from .main import main as main_func
-
-from pathlib import Path
-
-import sys
+from .stdio import eprint
 
 
 def opus_bitrate(kbps: str):
@@ -13,15 +11,11 @@ def opus_bitrate(kbps: str):
     raise ValueError()
 
 
-def eprint(*args, **kwargs):
-    print(*args, file=sys.stderr, **kwargs)
-
-
 def main(argv: list[str] | None = None) -> int:
     from . import __version__ as version
 
     try:
-        parser = ArgumentParser(prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="")
+        parser = ArgumentParser(prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="Mirror your FLAC audio library to a portable lossy Opus version")
         parser.add_argument("-v", "--version", action="version", version=version)
         parser.add_argument("src", metavar="SRC", type=str, help="source directory")
         parser.add_argument("dest", metavar="DEST", type=str, help="destination directory")

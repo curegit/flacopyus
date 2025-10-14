@@ -13,8 +13,10 @@ from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, T
 
 console = rich.console.Console(stderr=True)
 
+
 class Error:
     pass
+
 
 def main(
     src: Path,
@@ -187,6 +189,7 @@ try:
     sync_func = os.fdatasync
 except AttributeError:
     sync_func = os.fsync
+
 
 def fdatasync(f):
     fd = f if isinstance(f, int) else f.fileno()

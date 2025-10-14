@@ -4,10 +4,8 @@ import contextlib
 import rich.console
 from pathlib import Path
 from collections.abc import Iterator, Callable
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
-from flacopyus.funs import greedy
-
-from flacopyus.stdio import progress_bar, error_console
+from .funs import greedy
+from .stdio import progress_bar, error_console
 
 
 def itree(
@@ -225,4 +223,3 @@ def itreemap[T](
 
         if progress_display is not None and copy_task is not None:
             progress_display.update(copy_task, total=total_copy)
-

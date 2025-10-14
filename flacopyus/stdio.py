@@ -1,14 +1,11 @@
-from  rich.console import Console
-
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
-
 import rich
 import rich.text
 import rich.console
 from types import EllipsisType
+from rich.console import Console
+from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
 
 type StrLike = str | bytes | bool | int | float | complex | BaseException | EllipsisType | None
-
 type StyledText = tuple[str, str]
 
 console = rich.console.Console()
@@ -71,7 +68,5 @@ def magenta(s: object, /, *, bold: bool = False) -> StyledText:
     return styled_text(s, "magenta", bold=bold)
 
 
-
 def progress_bar(console: Console = error_console):
     return Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
-
