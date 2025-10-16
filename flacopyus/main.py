@@ -2,16 +2,41 @@ import time
 import os
 import shutil
 import subprocess as sp
-import rich.console
+import io
+import functools
 from pathlib import Path
+from dataclasses import dataclass
+from enum import StrEnum
 from contextlib import nullcontext
 from threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
-from flacopyus.funs import filter_split
-from flacopyus.filesys import itreemap, itree
-from rich.progress import Progress, TextColumn, BarColumn, TaskProgressColumn, TimeRemainingColumn, MofNCompleteColumn
+from .funs import filter_split
+from .stdio import progress_bar, error_console
+from .filesys import itreemap, itree
 
-console = rich.console.Console(stderr=True)
+
+class BitrateMode(StrEnum):
+    VBR = "--vbr"
+    CBR = "--cbr"
+    HardCBR = "--hard-cbr"
+
+
+class LowBitrateTuning(StrEnum):
+    Music = "--music"
+    Speech = "--speech"
+
+
+class Downmix(StrEnum):
+    Mono = "--downmix-mono"
+    Stereo = "--downmix-stereo"
+
+
+@dataclass(kw_only=True, frozen=True)
+class OpusOptions:
+    bitrate: int = 128
+    bitrate_mode: BitrateMode = BitrateMode.VBR
+    low_bitrate_tuning: LowBitrateTuning | None = None
+    downmix: Downmix | None = None
 
 
 class Error:
@@ -22,17 +47,20 @@ def main(
     src: Path,
     dest: Path,
     *,
-    bitrate: int = 128,
+    opus_options: OpusOptions = OpusOptions(),
+    re_encode: bool = False,
     wav: bool,
     delete: bool = False,
     delete_excluded: bool = False,
     copy_exts: list[str] = [],
     fix_case: bool = False,
     encoding_concurrency: int | None = None,
+    allow_parallel_io: bool = False,
     copying_concurrency: int = 1,
 ):
     encode = build_opusenc_func(
-        bitrate=bitrate,
+        options=opus_options,
+        use_lock=(not allow_parallel_io),
     )
     delete = delete or delete_excluded
 
@@ -90,7 +118,7 @@ def main(
             for _ in itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False):
                 pass
             # Finish remaining tasks
-            progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
+            progress_display = progress_bar(error_console)
             task = progress_display.add_task("Processing", total=len(pending))
             with progress_display:
                 while pending:
@@ -134,7 +162,7 @@ def main(
         try:
             for _ in itreemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
                 pass
-            progress_display = Progress(TextColumn("[bold]{task.description}"), BarColumn(), MofNCompleteColumn(), TaskProgressColumn(), TimeRemainingColumn(), console=console)
+            progress_display = progress_bar(error_console)
             task = progress_display.add_task("Copying", total=len(pending))
             with progress_display:
                 while pending:
@@ -184,21 +212,30 @@ def which(cmd: str) -> str:
             return path
 
 
-try:
-    # Available on Unix
-    sync_func = os.fdatasync
-except AttributeError:
-    sync_func = os.fsync
+@functools.cache
+def fsync_func():
+    try:
+        # Available on Unix
+        return os.fdatasync
+    except AttributeError:
+        return os.fsync
 
 
-def fdatasync(f):
+def fdatasync(f: io.BufferedIOBase | int):
     fd = f if isinstance(f, int) else f.fileno()
-    sync_func(fd)
+    fsync_func()(fd)
 
 
-def build_opusenc_func(*, bitrate: int, use_lock: bool = True):
+def build_opusenc_func(options: OpusOptions, *,  use_lock: bool = True):
     opusenc_bin = which("opusenc")
-    cmd_line = [opusenc_bin, "--bitrate", str(bitrate), "-", "-"]
+    cmd_line = [opusenc_bin, "--bitrate", str(options.bitrate)]
+    cmd_line.append(options.bitrate_mode.value)
+    if options.low_bitrate_tuning is not None:
+        cmd_line.append(options.low_bitrate_tuning.value)
+    if options.downmix is not None:
+        cmd_line.append(options.downmix.value)
+    cmd_line.extend(["-", "-"])
+
     lock = RLock()
 
     def encode(src_file: Path, dest_opus_file: Path):
