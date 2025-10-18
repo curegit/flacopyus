@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pip", "setuptools >= 78", "build", "twine", "black", "mypy"]
+dev = ["pip", "build", "twine", "black", "mypy"]
 
 [project.scripts]
 flacopyus = "flacopyus.cli:main"
