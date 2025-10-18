@@ -47,6 +47,7 @@ def main(
     src: Path,
     dest: Path,
     *,
+    force: bool = False,
     opus_options: OpusOptions = OpusOptions(),
     re_encode: bool = False,
     wav: bool,
@@ -74,6 +75,11 @@ def main(
         if k in copy_exts:
             raise ValueError()
 
+    # TODO: Check SRC and DEST tree overlap for safety
+    # TODO: Check some flacs are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
+    if not force:
+        pass
+
     ds: list[Path] = []
     if delete:
         if dest.exists(follow_symlinks=False):
@@ -95,7 +101,7 @@ def main(
         if d.is_symlink():
             pass
         # TODO: handle case where destination is a folder and conflicts
-        if not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
+        if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
             cp = encode(s, d)
             copy_mod(s_ns, d)
         if fix_case:
@@ -137,7 +143,7 @@ def main(
             with open(d, "wb") as d_fp:
                 shutil.copyfileobj(s_fp, d_fp)
                 d_fp.flush()
-                fdatasync(d_fp)
+                sync_disk(d_fp)
 
     def ff_(s: Path, d: Path):
         # TODO: remove symlink
@@ -227,7 +233,7 @@ def fsync_func():
         return os.fsync
 
 
-def fdatasync(f: io.BufferedIOBase | int):
+def sync_disk(f: io.BufferedIOBase | int):
     fd = f if isinstance(f, int) else f.fileno()
     fsync_func()(fd)
 
@@ -258,7 +264,7 @@ def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True):
             with open(dest_opus_file, "wb") as dest_fp:
                 dest_fp.write(cp.stdout)
                 dest_fp.flush()
-                fdatasync(dest_fp)
+                sync_disk(dest_fp)
         return cp
 
     return encode

@@ -17,6 +17,7 @@ def main(argv: list[str] | None = None) -> int:
             epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
         )
         parser.add_argument("-v", "--version", action="version", version=version)
+        parser.add_argument("-f", "--force", action="store_true", help="disable safety checks and force continuing")
         parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
 
@@ -41,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group.add_argument("--wav", action="store_true", help="also encode WAV files to Opus files")
         mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=some_string, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
         group = mirroring_group.add_mutually_exclusive_group()
-        group.add_argument("--delete", action="store_true", help="delete any files in DEST that are not in SRC")
+        group.add_argument("--delete", action="store_true", help="delete files of relevant extensions in DEST that are not in SRC")
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
