@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group.add_argument("--wav", action="store_true", help="also encode WAV files to Opus files")
         mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=some_string, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
         group = mirroring_group.add_mutually_exclusive_group()
-        group.add_argument("--delete", action="store_true", help="")
+        group.add_argument("--delete", action="store_true", help="delete any files in DEST that are not in SRC")
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
