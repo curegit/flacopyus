@@ -6,6 +6,34 @@ Mirror your FLAC audio library to a portable lossy Opus version
 flacopyus FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
+## Motivation
+
+Lossless audio libraries are often too large for mobile devices or cloud storage, so having a compact, portable duplicate is desirable.
+
+Flacopyus mirrors your lossless FLAC library to a portable Opus collection.
+It performs rsync-like batch mirroring with incremental encoding/copying to save time.
+It preserves metadata and is idempotent, so repeated runs safely keep the destination in sync.
+
+We specifically target FLAC to Opus because both formats use Vorbis Comment, meaning it transparently preserves nearly all metadata, including album art.
+
+## How It Works
+
+- Uses the `opusenc` binary; works on any OS where `opusenc` is available.
+- Copies the source file modification time to the encoded Opus file.
+- Incrementally encodes new files and updates Opus files when modification times differ.
+- Able to copy additional formats (e.g., `mp3`, `m4a`) to support mixed lossless/lossy libraries.
+
+## Installation
+
+```sh
+pip install flacopyus
+```
+
+## Known Issues
+
+- Requires a file system that supports nanosecond-precision modification times
+- Limited support for symbolic links
+
 ## License
 
 GNU General Public License v3.0 or later
