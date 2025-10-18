@@ -2,7 +2,7 @@ from pathlib import Path
 from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS
 from .main import main as main_func, OpusOptions, BitrateMode, LowBitrateTuning, Downmix
 from .stdio import eprint
-from .args import uint, natural, opus_bitrate, nonempty
+from .args import uint, natural, opus_bitrate, some_string
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -11,8 +11,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         parser = ArgumentParser(prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="Mirror your FLAC audio library to a portable lossy Opus version")
         parser.add_argument("-v", "--version", action="version", version=version)
-        parser.add_argument("src", metavar="SRC", type=nonempty, help="source directory containing FLAC files")
-        parser.add_argument("dest", metavar="DEST", type=nonempty, help="destination directory saving Opus files")
+        parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
+        parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
 
         opus_group = parser.add_argument_group(
             "Opus encoding options",
@@ -33,7 +33,7 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group = parser.add_argument_group("mirroring options")
         mirroring_group.add_argument("--re-encode", action="store_true", help="force re-encoding of all Opus files")
         mirroring_group.add_argument("--wav", action="store_true", help="also encode WAV files to Opus files")
-        mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=nonempty, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
+        mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=some_string, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete", action="store_true", help="")
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")

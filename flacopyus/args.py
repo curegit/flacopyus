@@ -19,7 +19,7 @@ def opus_bitrate(kbps: str):
     raise ValueError()
 
 
-def nonempty(string: str):
+def some_string(string: str):
     if string:
         return string
     else:
