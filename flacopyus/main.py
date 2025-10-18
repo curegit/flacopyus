@@ -91,8 +91,7 @@ def main(
     def cp_main(s: Path, d: Path):
         stat_s = s.stat()
         s_ns = stat_s.st_mtime_ns
-        # TODO: --bitrate 変更を検知できるようにする()-- しない。マニュアル対応の方が増分エンコードできて良い
-        # TODO: 送り先がフォルダで衝突しているとき
+        # TODO: handle case where destination is a folder and conflicts
         if not d.exists() or s_ns != d.stat().st_mtime_ns:
             cp = encode(s, d)
             copy_mod(s_ns, d)
@@ -138,7 +137,7 @@ def main(
                 fdatasync(d_fp)
 
     def ff_(s: Path, d: Path):
-        # TODO: 送り先がフォルダで衝突しているとき
+        # TODO: handle case where destination is a folder and conflicts
         if not d.exists():
             copyfile_fsync(s, d)
             copy_mod(s, d)

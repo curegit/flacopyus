@@ -9,7 +9,11 @@ def main(argv: list[str] | None = None) -> int:
     from . import __version__ as version
 
     try:
-        parser = ArgumentParser(prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="Mirror your FLAC audio library to a portable lossy Opus version")
+        parser = ArgumentParser(
+            prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter,
+            description="Mirror your FLAC audio library to a portable lossy Opus version",
+            epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
+            )
         parser.add_argument("-v", "--version", action="version", version=version)
         parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
@@ -39,9 +43,9 @@ def main(argv: list[str] | None = None) -> int:
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
-        parser.add_argument("-P", "--parallel-encoding", metavar="N", type=uint, nargs="?", help="enable parallel encoding with N concurrency [N = max(1, number of CPU cores - 1)]")
+        parser.add_argument("-P", "--parallel-encoding", metavar="THREADS", type=uint, nargs="?", help="enable parallel encoding with THREADS threads [THREADS = max(1, number of CPU cores - 1)]")
         parser.add_argument("--allow-parallel-io", action="store_true", help="disable mutual exclusion for disk I/O operations during parallel encoding (not recommended for Hard Disk drives)")
-        parser.add_argument("--parallel-copy", metavar="N", type=natural, default=1, help="concurrency of copy operations")
+        parser.add_argument("--parallel-copy", metavar="THREADS", type=natural, default=1, help="concurrency of copy operations")
 
         args = parser.parse_args(argv)
         return main_func(
