@@ -10,10 +10,12 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         parser = ArgumentParser(
-            prog="flacopyus", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter,
+            prog="flacopyus",
+            allow_abbrev=False,
+            formatter_class=ArgumentDefaultsHelpFormatter,
             description="Mirror your FLAC audio library to a portable lossy Opus version",
             epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
-            )
+        )
         parser.add_argument("-v", "--version", action="version", version=version)
         parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")

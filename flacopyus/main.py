@@ -225,7 +225,7 @@ def fdatasync(f: io.BufferedIOBase | int):
     fsync_func()(fd)
 
 
-def build_opusenc_func(options: OpusOptions, *,  use_lock: bool = True):
+def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True):
     opusenc_bin = which("opusenc")
     cmd_line = [opusenc_bin, "--bitrate", str(options.bitrate)]
     cmd_line.append(options.bitrate_mode.value)
