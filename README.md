@@ -29,6 +29,66 @@ We specifically target FLAC to Opus because both formats use Vorbis Comment, mea
 pip install flacopyus
 ```
 
+## Usage
+
+```txt
+usage: flacopyus [-h] [-v] [-b KBPS] [--vbr | --cbr | --hard-cbr] [--music |
+                 --speech] [--downmix-mono | --downmix-stereo] [--re-encode]
+                 [--wav] [-c EXT [EXT ...]] [--delete | --delete-excluded]
+                 [--fix-case] [-P [N]] [--allow-parallel-io]
+                 [--parallel-copy N]
+                 SRC DEST
+
+Mirror your FLAC audio library to a portable lossy Opus version
+
+positional arguments:
+  SRC                   source directory containing FLAC files
+  DEST                  destination directory saving Opus files
+
+options:
+  -h, --help            show this help message and exit
+  -v, --version         show program's version number and exit
+  -P, --parallel-encoding [N]
+                        enable parallel encoding with N concurrency [N =
+                        max(1, number of CPU cores - 1)] (default: None)
+  --allow-parallel-io   disable mutual exclusion for disk I/O operations
+                        during parallel encoding (not recommended for Hard
+                        Disk drives) (default: False)
+  --parallel-copy N     concurrency of copy operations (default: 1)
+
+Opus encoding options:
+  Note that changing these options will NOT trigger re-encoding of existing
+  Opus files so that the change will affect incrementally. Use '--re-encode'
+  to recreate all Opus files.
+
+  -b, --bitrate KBPS    target bitrate in kbps of Opus files (integer in
+                        6-256) (default: 128)
+  --vbr                 use Opus variable bitrate mode (default: --vbr)
+  --cbr                 use Opus constrained variable bitrate mode
+  --hard-cbr            use Opus hard constant bitrate mode
+  --music               force Opus encoder to tune low bitrates for music
+                        (default: False)
+  --speech              force Opus encoder to tune low bitrates for speech
+                        (default: False)
+  --downmix-mono        downmix to mono (default: False)
+  --downmix-stereo      downmix to stereo (if having more than 2 channels)
+                        (default: False)
+
+mirroring options:
+  --re-encode           force re-encoding of all Opus files (default: False)
+  --wav                 also encode WAV files to Opus files (default: False)
+  -c, --copy EXT [EXT ...]
+                        copy files whose extension is .EXT (case-insensitive)
+                        from SRC to DEST (default: None)
+  --delete              delete any files in DEST that are not in SRC (default:
+                        False)
+  --delete-excluded     delete any files in DEST that are not in SRC (default:
+                        False)
+  --fix-case            fix file/directory name cases to match the source
+                        directory (for filesystems that are case-insensitive)
+                        (default: False)
+```
+
 ## Known Issues
 
 - Requires a file system that supports nanosecond-precision modification times
