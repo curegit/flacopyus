@@ -40,8 +40,8 @@ Please install it manually and add it to the `PATH` environment variable.
 usage: flacopyus [-h] [-v] [-b KBPS] [--vbr | --cbr | --hard-cbr] [--music |
                  --speech] [--downmix-mono | --downmix-stereo] [--re-encode]
                  [--wav] [-c EXT [EXT ...]] [--delete | --delete-excluded]
-                 [--fix-case] [-P [N]] [--allow-parallel-io]
-                 [--parallel-copy N]
+                 [--fix-case] [-P [THREADS]] [--allow-parallel-io]
+                 [--parallel-copy THREADS]
                  SRC DEST
 
 Mirror your FLAC audio library to a portable lossy Opus version
@@ -53,13 +53,14 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -v, --version         show program's version number and exit
-  -P, --parallel-encoding [N]
-                        enable parallel encoding with N concurrency [N =
-                        max(1, number of CPU cores - 1)] (default: None)
+  -P, --parallel-encoding [THREADS]
+                        enable parallel encoding with THREADS threads [THREADS
+                        = max(1, number of CPU cores - 1)] (default: None)
   --allow-parallel-io   disable mutual exclusion for disk I/O operations
                         during parallel encoding (not recommended for Hard
                         Disk drives) (default: False)
-  --parallel-copy N     concurrency of copy operations (default: 1)
+  --parallel-copy THREADS
+                        concurrency of copy operations (default: 1)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -92,6 +93,9 @@ mirroring options:
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystems that are case-insensitive)
                         (default: False)
+
+A '--' is usable to terminate option parsing so remaining arguments are
+treated as positional arguments.
 ```
 
 ## Known Issues

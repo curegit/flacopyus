@@ -1,12 +1,13 @@
 .PHONY: build install devinstall preview publish clean format check
 
-build: clean README.md
+build: clean
+	php README.md.php > README.md
 	python3 -m build
 
-install: README.md
+install:
 	python3 -m pip install .
 
-devinstall: README.md
+devinstall:
 	python3 -m pip install -e .[dev]
 
 preview: build
@@ -26,6 +27,3 @@ format:
 
 check:
 	python3 -m mypy flacopyus
-
-README.md: README.md.php
-	php README.md.php > README.md
