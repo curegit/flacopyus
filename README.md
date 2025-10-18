@@ -37,11 +37,11 @@ Please install it manually and add it to the `PATH` environment variable.
 ## Usage
 
 ```txt
-usage: flacopyus [-h] [-v] [-b KBPS] [--vbr | --cbr | --hard-cbr] [--music |
-                 --speech] [--downmix-mono | --downmix-stereo] [--re-encode]
-                 [--wav] [-c EXT [EXT ...]] [--delete | --delete-excluded]
-                 [--fix-case] [-P [THREADS]] [--allow-parallel-io]
-                 [--parallel-copy THREADS]
+usage: flacopyus [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
+                 [--music | --speech] [--downmix-mono | --downmix-stereo]
+                 [--re-encode] [--wav] [-c EXT [EXT ...]] [--delete |
+                 --delete-excluded] [--fix-case] [-P [THREADS]]
+                 [--allow-parallel-io] [--parallel-copy THREADS]
                  SRC DEST
 
 Mirror your FLAC audio library to a portable lossy Opus version
@@ -53,14 +53,8 @@ positional arguments:
 options:
   -h, --help            show this help message and exit
   -v, --version         show program's version number and exit
-  -P, --parallel-encoding [THREADS]
-                        enable parallel encoding with THREADS threads [THREADS
-                        = max(1, number of CPU cores - 1)] (default: None)
-  --allow-parallel-io   disable mutual exclusion for disk I/O operations
-                        during parallel encoding (not recommended for Hard
-                        Disk drives) (default: False)
-  --parallel-copy THREADS
-                        concurrency of copy operations (default: 1)
+  -f, --force           disable safety checks and force continuing (default:
+                        False)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -86,13 +80,23 @@ mirroring options:
   -c, --copy EXT [EXT ...]
                         copy files whose extension is .EXT (case-insensitive)
                         from SRC to DEST (default: None)
-  --delete              delete any files in DEST that are not in SRC (default:
-                        False)
+  --delete              delete files of relevant extensions in DEST that are
+                        not in SRC (default: False)
   --delete-excluded     delete any files in DEST that are not in SRC (default:
                         False)
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystems that are case-insensitive)
                         (default: False)
+
+concurrency options:
+  -P, --parallel-encoding [THREADS]
+                        enable parallel encoding with THREADS threads [THREADS
+                        = max(1, number of CPU cores - 1)] (default: None)
+  --allow-parallel-io   disable mutual exclusion for disk I/O operations
+                        during parallel encoding (not recommended for Hard
+                        Disk drives) (default: False)
+  --parallel-copy THREADS
+                        concurrency of copy operations (default: 1)
 
 A '--' is usable to terminate option parsing so remaining arguments are
 treated as positional arguments.
