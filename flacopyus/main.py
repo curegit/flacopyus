@@ -168,17 +168,17 @@ def main(
 
         return f
 
-    pending: list[tuple[Path, Future[bool]]] = []
+    pending_cp: list[tuple[Path, Future[bool]]] = []
     with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
         try:
-            for _ in itreemap(cp(executor_cp, pending), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
+            for _ in itreemap(cp(executor_cp, pending_cp), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
                 pass
             progress_display = progress_bar(error_console)
-            task = progress_display.add_task("Copying", total=len(pending))
+            task = progress_display.add_task("Copying", total=len(pending_cp))
             with progress_display:
-                while pending:
+                while pending_cp:
                     time.sleep(poll)
-                    done, pending = filter_split(lambda x: x[1].done(), pending)
+                    done, pending_cp = filter_split(lambda x: x[1].done(), pending_cp)
                     for d, fu in done:
                         # Unwrap for collecting exceptions
                         fu.result()
