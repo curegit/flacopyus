@@ -25,9 +25,14 @@ We specifically target FLAC to Opus because both formats use Vorbis Comment, mea
 
 ## Installation
 
+Python 3.14 or later is required.
+
 ```sh
 pip install flacopyus
 ```
+
+Currently, `opusenc` is not included in the package.
+Please install it manually and add it to the `PATH` environment variable.
 
 ## Usage
 
