@@ -76,7 +76,7 @@ def main(
 
     ds: list[Path] = []
     if delete:
-        if dest.exists():
+        if dest.exists(follow_symlinks=False):
             if delete_excluded:
                 ds = list(itree(dest))
             else:
@@ -91,8 +91,11 @@ def main(
     def cp_main(s: Path, d: Path):
         stat_s = s.stat()
         s_ns = stat_s.st_mtime_ns
+        # TODO: remove symlink
+        if d.is_symlink():
+            pass
         # TODO: handle case where destination is a folder and conflicts
-        if not d.exists() or s_ns != d.stat().st_mtime_ns:
+        if not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
             cp = encode(s, d)
             copy_mod(s_ns, d)
         if fix_case:
@@ -137,6 +140,9 @@ def main(
                 fdatasync(d_fp)
 
     def ff_(s: Path, d: Path):
+        # TODO: remove symlink
+        if d.is_symlink():
+            pass
         # TODO: handle case where destination is a folder and conflicts
         if not d.exists():
             copyfile_fsync(s, d)
@@ -191,6 +197,7 @@ def main(
             found_emp = False
             for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False):
                 if is_empty:
+                    # TODO: remove symlink
                     if purge_dir or not s.exists() or not s.is_dir():
                         if d not in try_del:
                             found_emp = True
