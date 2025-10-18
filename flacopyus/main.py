@@ -192,6 +192,7 @@ def main(
         if is_deleted:
             p.unlink()
 
+    # TODO: parameterize
     del_dir = True
     purge_dir = True
 
