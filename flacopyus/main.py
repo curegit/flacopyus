@@ -1,42 +1,12 @@
-import time
 import os
 import shutil
-import subprocess as sp
-import io
-import functools
+import time
 from pathlib import Path
-from dataclasses import dataclass
-from enum import StrEnum
-from contextlib import nullcontext
-from threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
+from .opus import OpusOptions, build_opusenc_func
 from .funs import filter_split
-from .stdio import progress_bar, error_console
-from .filesys import itreemap, itree
-
-
-class BitrateMode(StrEnum):
-    VBR = "--vbr"
-    CBR = "--cbr"
-    HardCBR = "--hard-cbr"
-
-
-class LowBitrateTuning(StrEnum):
-    Music = "--music"
-    Speech = "--speech"
-
-
-class Downmix(StrEnum):
-    Mono = "--downmix-mono"
-    Stereo = "--downmix-stereo"
-
-
-@dataclass(kw_only=True, frozen=True)
-class OpusOptions:
-    bitrate: int = 128
-    bitrate_mode: BitrateMode = BitrateMode.VBR
-    low_bitrate_tuning: LowBitrateTuning | None = None
-    downmix: Downmix | None = None
+from .stdio import reprint, progress_bar, error_console
+from .filesys import itreemap, itree, copy_mtime, sync_disk
 
 
 class Error:
@@ -58,6 +28,7 @@ def main(
     encoding_concurrency: int | None = None,
     allow_parallel_io: bool = False,
     copying_concurrency: int = 1,
+    verbose: bool = False,
 ):
     encode = build_opusenc_func(
         options=opus_options,
@@ -102,8 +73,10 @@ def main(
             pass
         # TODO: handle case where destination is a folder and conflicts
         if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
+            if verbose:
+                reprint(str(s))
             cp = encode(s, d)
-            copy_mod(s_ns, d)
+            copy_mtime(s_ns, d)
         if fix_case:
             fix_case_file(d)
         # TODO: Thread safe?
@@ -152,10 +125,10 @@ def main(
         # TODO: handle case where destination is a folder and conflicts
         if not d.exists():
             copyfile_fsync(s, d)
-            copy_mod(s, d)
+            copy_mtime(s, d)
         if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
             copyfile_fsync(s, d)
-            copy_mod(s, d)
+            copy_mtime(s, d)
             if fix_case:
                 fix_case_file(d)
         will_del_dict[d] = False
@@ -215,65 +188,3 @@ def main(
                         pass
 
     return 0
-
-
-def which(cmd: str) -> str:
-    match shutil.which(cmd):
-        case None:
-            raise RuntimeError(f"Command not found: {cmd}")
-        case path:
-            return path
-
-
-@functools.cache
-def fsync_func():
-    try:
-        # Available on Unix
-        return os.fdatasync
-    except AttributeError:
-        return os.fsync
-
-
-def sync_disk(f: io.BufferedIOBase | int):
-    fd = f if isinstance(f, int) else f.fileno()
-    fsync_func()(fd)
-
-
-def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True):
-    opusenc_bin = which("opusenc")
-    cmd_line = [opusenc_bin, "--bitrate", str(options.bitrate)]
-    cmd_line.append(options.bitrate_mode.value)
-    if options.low_bitrate_tuning is not None:
-        cmd_line.append(options.low_bitrate_tuning.value)
-    if options.downmix is not None:
-        cmd_line.append(options.downmix.value)
-    cmd_line.extend(["-", "-"])
-
-    lock = RLock()
-
-    def encode(src_file: Path, dest_opus_file: Path):
-        buf = None
-        with open(src_file, "rb") as src_fp:
-            if use_lock:
-                with lock:
-                    buf = src_fp.read()
-                in_stream = None
-            else:
-                in_stream = src_fp
-            cp = sp.run(cmd_line, text=False, input=buf, stdin=in_stream, capture_output=True, check=True)
-        with lock if use_lock else nullcontext():
-            with open(dest_opus_file, "wb") as dest_fp:
-                dest_fp.write(cp.stdout)
-                dest_fp.flush()
-                sync_disk(dest_fp)
-        return cp
-
-    return encode
-
-
-def copy_mod(s: int | Path, d: Path):
-    if isinstance(s, int):
-        ns_s = s
-    else:
-        ns_s = s.stat().st_mtime_ns
-    os.utime(d, ns=(time.time_ns(), ns_s))

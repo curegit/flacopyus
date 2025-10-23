@@ -1,11 +1,36 @@
 import os
 import shutil
+import io
+import time
+import functools
 import contextlib
 import rich.console
 from pathlib import Path
-from collections.abc import Iterator, Callable
+from collections.abc import Generator, Callable
 from .funs import greedy
 from .stdio import progress_bar, error_console
+
+
+@functools.cache
+def fsync_func() -> Callable[[int], None]:
+    # Available on Unix
+    if fdatasync := getattr(os, "fdatasync", None):
+        return fdatasync
+    return os.fsync
+
+
+def sync_disk(fd_like: io.IOBase | int, /):
+    fd = fd_like if isinstance(fd_like, int) else fd_like.fileno()
+    fsync_func()(fd)
+
+
+def copy_mtime(src: int | Path, dest: Path, /):
+    if isinstance(src, int):
+        src_ns = src
+    else:
+        src_ns = src.stat().st_mtime_ns
+    atime = time.time_ns()
+    os.utime(dest, ns=(atime, src_ns))
 
 
 def itree(
@@ -16,25 +41,31 @@ def itree(
     file: bool = True,
     directory: bool = False,
     follow_symlinks: bool = False,
+    include_broken_symlinks: bool = False,
+    error_broken_symlinks: bool = True,
     raises_on_error: bool = True,
-) -> Iterator[Path]:
-    return (
-        p
-        for _, p, _ in itreemap(
-            greedy,
-            path,
-            path,
-            extmap=ext,
-            recursive=recursive,
-            file=file,
-            directory=directory,
-            copy_filtered_files=False,
-            mkdir=False,
-            follow_symlinks=follow_symlinks,
-            progress=False,
-            raises_on_error=raises_on_error,
-        )
-    )
+    error_list: list[Exception] | None = None,
+) -> Generator[Path, None, list[Exception]]:
+    exceptions_list: list[Exception] = [] if error_list is None else error_list
+    for _, p, _ in itreemap(
+        greedy,
+        path,
+        path,
+        extmap=ext,
+        recursive=recursive,
+        file=file,
+        directory=directory,
+        copy_filtered_files=False,
+        mkdir=False,
+        follow_symlinks=follow_symlinks,
+        include_broken_symlinks=include_broken_symlinks,
+        error_broken_symlinks=error_broken_symlinks,
+        progress=False,
+        raises_on_error=raises_on_error,
+        error_list=exceptions_list,
+    ):
+        yield p
+    return exceptions_list
 
 
 def itreemap[T](
@@ -54,15 +85,20 @@ def itreemap[T](
     mkdir_empty: bool = True,
     fix_case: bool = True,
     follow_symlinks: bool = False,
+    include_broken_symlinks: bool = False,
+    error_broken_symlinks: bool = True,
     raises_on_error: bool = True,
+    error_list: list[Exception] | None = None,
     progress: bool | None = None,
     console: rich.console.Console | None = None,
     progress_label: str = "Processing",
     progress_copying_label: str = "Copying",
     verbose: bool = False,
-) -> Iterator[tuple[Path, Path, T]]:
+) -> Generator[tuple[Path, Path, T], None, list[Exception]]:
     if console is None:
         console = error_console
+
+    exceptions_list: list[Exception] = [] if error_list is None else error_list
 
     copy_exts = [copy_ext] if isinstance(copy_ext, str) else copy_ext
     exts = list(extmap.keys()) if isinstance(extmap, dict) else [extmap] if isinstance(extmap, str) else extmap
@@ -81,6 +117,7 @@ def itreemap[T](
         console.print(*(str(x) for x in objects))
 
     def error_handler(e: Exception):
+        exceptions_list.append(e)
         if raises_on_error:
             raise e
         else:
@@ -110,7 +147,20 @@ def itreemap[T](
     total_copy = 0
     progress_display = None
     if progress:
-        total = sum(1 for _ in itree(path, ext=exts, recursive=recursive, file=file, directory=directory, follow_symlinks=follow_symlinks, raises_on_error=raises_on_error))
+        total = sum(
+            1
+            for _ in itree(
+                path,
+                ext=exts,
+                recursive=recursive,
+                file=file,
+                directory=directory,
+                follow_symlinks=follow_symlinks,
+                include_broken_symlinks=include_broken_symlinks,
+                error_broken_symlinks=error_broken_symlinks,
+                raises_on_error=raises_on_error,
+            )
+        )
         progress_display = progress_bar(console=console)
         task = progress_display.add_task(progress_label, total=total)
         if copy_filtered_files:
@@ -120,16 +170,30 @@ def itreemap[T](
         for rootpath, dirnames, filenames in path.walk(top_down=True, on_error=error_handler, follow_symlinks=follow_symlinks):
             relatives = rootpath.relative_to(path, walk_up=False)
             dest_rootpath = dest / relatives
-            dirnames_copy = dirnames
+            dirnames_copy = [*dirnames]
             if not recursive:
                 while dirnames:
                     dirnames.pop()
             applypaths = []
             copypaths = []
             applydirs = []
-            if file:
-                for f in filenames:
-                    filepath = rootpath / f
+            for f in filenames:
+                filepath = rootpath / f
+                # 壊れたシンボリックリンク
+                if not filepath.exists(follow_symlinks=True):
+                    if error_broken_symlinks:
+                        try:
+                            raise FileNotFoundError(f"Broken symlink: {filepath}")
+                        except Exception as e:
+                            error_handler(e)
+                    if not include_broken_symlinks:
+                        continue
+                if file:
+                    # follow_symlinks=False のとき、ディレクトリへのリンクが混入する
+                    if filepath.is_dir():
+                        if directory:
+                            applydirs.append(filepath)
+                        continue
                     if filepath.suffix:
                         assert filepath.suffix[0] == os.extsep
                         ext = filepath.suffix[1:]
@@ -152,18 +216,25 @@ def itreemap[T](
                     else:
                         if verbose:
                             dry_run_mkdir(dest_rootpath)
-                        dest_rootpath.mkdir(parents=True, exist_ok=True)
+                        try:
+                            dest_rootpath.mkdir(parents=True, exist_ok=True)
+                        except Exception as e:
+                            error_handler(e)
                         if fix_case:
                             cur_root = rootpath
                             cur_dest_root = dest
                             for part in relatives.parts:
                                 cur_root = cur_root / part
                                 cur_dest_root = cur_dest_root / part
-                                if cur_dest_root.is_symlink():
-                                    continue
-                                physical = cur_dest_root.resolve(strict=True)
-                                if physical.name != cur_dest_root.name:
-                                    physical.rename(cur_dest_root.absolute())
+                                try:
+                                    if cur_dest_root.is_symlink():
+                                        cur_dest_root.rename(cur_dest_root.absolute())
+                                        continue
+                                    physical = cur_dest_root.resolve(strict=True)
+                                    if physical.name != cur_dest_root.name:
+                                        physical.rename(cur_dest_root.absolute())
+                                except Exception as e:
+                                    error_handler(e)
 
             for applypath, name, ext in applypaths:
                 if isinstance(extmap, dict):
@@ -193,7 +264,7 @@ def itreemap[T](
                     if verbose:
                         dry_run_copy(copypath, destpath)
                     try:
-                        shutil.copy2(copypath, destpath, follow_symlinks=follow_symlinks)
+                        shutil.copy2(copypath, destpath, follow_symlinks=False)
                         if fix_case:
                             physical = destpath.resolve(strict=True)
                             if destpath.name != physical.name:
@@ -223,3 +294,5 @@ def itreemap[T](
 
         if progress_display is not None and copy_task is not None:
             progress_display.update(copy_task, total=total_copy)
+
+    return exceptions_list
