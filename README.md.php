@@ -36,8 +36,10 @@ Please install it manually and add it to the `PATH` environment variable.
 
 ## Usage
 
+### Sync
+
 ```txt
-<?= shell_exec("python3 -m flacopyus --help") ?>
+<?= shell_exec("python3 -m flacopyus sync --help") ?>
 ```
 
 ## Known Issues
