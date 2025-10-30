@@ -1,11 +1,14 @@
 import os
 import shutil
 import time
+import platform
 from pathlib import Path
+from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, Future
 from .opus import OpusOptions, build_opusenc_func
 from .funs import filter_split
 from .stdio import reprint, progress_bar, error_console
+from .assets import use_opusenc_binary_windows
 from .filesys import itreemap, itree, copy_mtime, sync_disk
 
 
@@ -25,91 +28,103 @@ def main(
     delete_excluded: bool = False,
     copy_exts: list[str] = [],
     fix_case: bool = False,
-    encoding_concurrency: int | None = None,
+    encoding_concurrency: bool | int | None = None,
     allow_parallel_io: bool = False,
     copying_concurrency: int = 1,
     verbose: bool = False,
 ):
-    encode = build_opusenc_func(
-        options=opus_options,
-        use_lock=(not allow_parallel_io),
-    )
-    delete = delete or delete_excluded
+    # TODO: branch by platform
+    with (use_opusenc_binary_windows() if platform.system().lower() == "windows" else nullcontext()) as opusenc_binary:
 
-    copy_exts = [e.lower() for e in copy_exts]
+        encode = build_opusenc_func(
+            options=opus_options,
+            use_lock=(not allow_parallel_io),
+            opusenc_binary=opusenc_binary,
+        )
+        delete = delete or delete_excluded
 
-    extmap = {"flac": "opus"}
-    if wav:
-        extmap |= {"wav": "opus"}
+        copy_exts = [e.lower() for e in copy_exts]
 
-    for k in extmap:
-        if k in copy_exts:
-            raise ValueError()
+        extmap = {"flac": "opus"}
+        if wav:
+            extmap |= {"wav": "opus"}
 
-    # TODO: Check SRC and DEST tree overlap for safety
-    # TODO: Check some flacs are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
-    if not force:
-        pass
+        for k in extmap:
+            if k in copy_exts:
+                raise ValueError()
 
-    ds: list[Path] = []
-    if delete:
-        if dest.exists(follow_symlinks=False):
-            if delete_excluded:
-                ds = list(itree(dest))
-            else:
-                ds = list(itree(dest, ext=["opus", *copy_exts]))
-    will_del_dict: dict[Path, bool] = {p: True for p in ds}
-
-    def fix_case_file(path: Path):
-        physical = path.resolve(strict=True)
-        if physical.name != path.name:
-            physical.rename(path)
-
-    def cp_main(s: Path, d: Path):
-        stat_s = s.stat()
-        s_ns = stat_s.st_mtime_ns
-        # TODO: remove symlink
-        if d.is_symlink():
+        # TODO: Check SRC and DEST tree overlap for safety
+        # TODO: Check some flacs are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
+        if not force:
             pass
-        # TODO: handle case where destination is a folder and conflicts
-        if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
-            if verbose:
-                reprint(str(s))
-            cp = encode(s, d)
-            copy_mtime(s_ns, d)
-        if fix_case:
-            fix_case_file(d)
-        # TODO: Thread safe?
-        will_del_dict[d] = False
-        return True
 
-    def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
-        def f(s: Path, d: Path):
-            future = pool.submit(cp_main, s, d)
-            pending.append((s, future))
+        ds: list[Path] = []
+        if delete:
+            if dest.exists(follow_symlinks=False):
+                if delete_excluded:
+                    ds = list(itree(dest))
+                else:
+                    ds = list(itree(dest, ext=["opus", *copy_exts]))
+        will_del_dict: dict[Path, bool] = {p: True for p in ds}
 
-        return f
+        def fix_case_file(path: Path):
+            physical = path.resolve(strict=True)
+            if physical.name != path.name:
+                physical.rename(path)
 
-    poll = 0.1
-    concurrency = max(1, 1 if (cpus := os.cpu_count()) is None else cpus - 1) if encoding_concurrency is None else encoding_concurrency
-    pending: list[tuple[Path, Future[bool]]] = []
-
-    with ThreadPoolExecutor(max_workers=concurrency) as executor:
-        try:
-            for _ in itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False):
+        def cp_main(s: Path, d: Path):
+            stat_s = s.stat()
+            s_ns = stat_s.st_mtime_ns
+            # TODO: remove symlink
+            if d.is_symlink():
                 pass
-            # Finish remaining tasks
-            progress_display = progress_bar(error_console)
-            task = progress_display.add_task("Processing", total=len(pending))
-            with progress_display:
-                while pending:
-                    time.sleep(poll)
-                    done, pending = filter_split(lambda x: x[1].done(), pending)
-                    progress_display.update(task, advance=len(done), refresh=True)
-        except KeyboardInterrupt:
-            # Exit quickly when interrupted
-            executor.shutdown(cancel_futures=True)
-            raise
+            # TODO: handle case where destination is a folder and conflicts
+            if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
+                if verbose:
+                    reprint(str(s))
+                cp = encode(s, d)
+                copy_mtime(s_ns, d)
+            if fix_case:
+                fix_case_file(d)
+            # TODO: Thread safe?
+            will_del_dict[d] = False
+            return True
+
+        def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
+            def f(s: Path, d: Path):
+                future = pool.submit(cp_main, s, d)
+                pending.append((s, future))
+
+            return f
+
+        poll = 0.1
+        match encoding_concurrency:
+            case bool() as b:
+                concurrency = max(1, 1 if (cpus := os.cpu_count()) is None else cpus - 1) if b else 1
+            case int() as n:
+                concurrency = n if n > 0 else max(1, 1 if (cpus := os.cpu_count()) is None else cpus - 1)
+            case None:
+                concurrency = 1
+            case _:
+                raise ValueError()
+        pending: list[tuple[Path, Future[bool]]] = []
+
+        with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            try:
+                for _ in itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False):
+                    pass
+                # Finish remaining tasks
+                progress_display = progress_bar(error_console)
+                task = progress_display.add_task("Processing", total=len(pending))
+                with progress_display:
+                    while pending:
+                        time.sleep(poll)
+                        done, pending = filter_split(lambda x: x[1].done(), pending)
+                        progress_display.update(task, advance=len(done), refresh=True)
+            except KeyboardInterrupt:
+                # Exit quickly when interrupted
+                executor.shutdown(cancel_futures=True)
+                raise
 
     def copyfile_fsync(s: Path, d: Path):
         with open(s, "rb") as s_fp:

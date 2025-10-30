@@ -31,15 +31,38 @@ Python 3.14 or later is required.
 pip install flacopyus
 ```
 
-Currently, `opusenc` is not included in the package.
-Please install it manually and add it to the `PATH` environment variable.
+Currently, `opusenc` binary is included in the package only for Windows (x86/x64).
+For other platforms, please install it manually and add it to the `PATH` environment variable, or use the appropriate package manager.
+
+### Homebrew (macOS)
+
+```sh
+brew install opus-tools
+```
+
+### Debian/Ubuntu
+
+```sh
+apt install opus-tools
+```
 
 ## Usage
 
 ### Sync
 
+`sync` command is the main operation, which mirrors your FLAC audio library to a portable lossy Opus version.
+
 ```txt
 <?= shell_exec("python3 -m flacopyus sync --help") ?>
+```
+
+### Test
+
+`test` command is used to test the Opus encoder setup.
+It checks if the `opusenc` binary is available and if it can encode a test stream without errors.
+
+```txt
+<?= shell_exec("python3 -m flacopyus test --help") ?>
 ```
 
 ## Known Issues
@@ -47,7 +70,35 @@ Please install it manually and add it to the `PATH` environment variable.
 - Requires a file system that supports nanosecond-precision modification times
 - Limited support for symbolic links
 
-## License
+## Notice Regarding Bundled Binaries
+
+This distribution includes prebuilt `opusenc` binary for Windows (x86/x64) from [the Opus-tools project](https://opus-codec.org/downloads/).
+These binaries are provided unmodified and are used as external utilities for Windows.
+
+### Opus-tools License
+
+Opus-tools, with the exception of `opusinfo` is available under the following two clause BSD-style license:
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+```txt
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## Flacopyus License
 
 GNU General Public License v3.0 or later
 

@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
         concurrency_group = sync_parser.add_argument_group("concurrency options")
-        concurrency_group.add_argument("-P", "--parallel-encoding", metavar="THREADS", type=uint, nargs="?", help="enable parallel encoding with THREADS threads [THREADS = max(1, #CPU cores - 1)]")
+        concurrency_group.add_argument("-P", "--parallel-encoding", metavar="THREADS", type=uint, nargs="?", const=0, help="enable parallel encoding with THREADS threads [THREADS = max(1, #CPUcores - 1)]")
         concurrency_group.add_argument(
             "--allow-parallel-io", action="store_true", help="disable mutual exclusion for disk I/O operations during parallel encoding (not recommended for Hard Disk drives)"
         )

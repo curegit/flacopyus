@@ -32,8 +32,11 @@ class OpusOptions:
     downmix: Downmix | None = None
 
 
-def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True):
-    opusenc_bin = which("opusenc")
+def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True, opusenc_binary: Path | None = None):
+    if opusenc_binary is None:
+        opusenc_bin = which("opusenc")
+    else:
+        opusenc_bin = str(opusenc_binary.resolve(strict=True))
     cmd_line = [opusenc_bin, "--bitrate", str(options.bitrate)]
     cmd_line.append(options.bitrate_mode.value)
     if options.low_bitrate_tuning is not None:

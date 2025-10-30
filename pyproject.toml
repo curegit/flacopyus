@@ -5,7 +5,7 @@ keywords = ["FLAC", "Opus", "music library", "file syncing", "portable audio pla
 requires-python = ">=3.14"
 readme = "README.md"
 license = "GPL-3.0-or-later"
-license-files = ["LICEN[CS]E*"]
+license-files = ["LICEN[CS]E*", "flacopyus/bin/LICEN[CS]E*"]
 maintainers = [
   {name = "curegit", email = "contact@curegit.jp"}
 ]
@@ -25,6 +25,9 @@ dev = ["pip", "build", "twine", "black", "mypy"]
 [project.scripts]
 flacopyus = "flacopyus.cli:main"
 
+[project.entry-points.pyinstaller40]
+hook-dirs = "flacopyus:pyinstaller_hooks_dir"
+
 [project.urls]
 homepage = "https://github.com/curegit/flacopyus"
 repository = "https://github.com/curegit/flacopyus.git"
@@ -33,8 +36,11 @@ repository = "https://github.com/curegit/flacopyus.git"
 requires = ["setuptools >= 78"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools]
-packages = ["flacopyus"]
+[tool.setuptools.packages.find]
+include = ["flacopyus*"]
+
+[tool.setuptools.package-data]
+flacopyus = ["bin/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "flacopyus.__version__"}

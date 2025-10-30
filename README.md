@@ -3,7 +3,7 @@
 Mirror your FLAC audio library to a portable lossy Opus version
 
 ```sh
-flacopyus FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
+flacopyus sync FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
 ## Motivation
@@ -31,18 +31,34 @@ Python 3.14 or later is required.
 pip install flacopyus
 ```
 
-Currently, `opusenc` is not included in the package.
-Please install it manually and add it to the `PATH` environment variable.
+Currently, `opusenc` binary is included in the package only for Windows (x86/x64).
+For other platforms, please install it manually and add it to the `PATH` environment variable, or use the appropriate package manager.
+
+### Homebrew (macOS)
+
+```sh
+brew install opus-tools
+```
+
+### Debian/Ubuntu
+
+```sh
+apt install opus-tools
+```
 
 ## Usage
 
+### Sync
+
+`sync` command is the main operation, which mirrors your FLAC audio library to a portable lossy Opus version.
+
 ```txt
-usage: flacopyus [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
-                 [--music | --speech] [--downmix-mono | --downmix-stereo]
-                 [--re-encode] [--wav] [-c EXT [EXT ...]] [--delete |
-                 --delete-excluded] [--fix-case] [-P [THREADS]]
-                 [--allow-parallel-io] [--parallel-copy THREADS]
-                 SRC DEST
+usage: flacopyus sync [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
+                      [--music | --speech] [--downmix-mono | --downmix-stereo]
+                      [--re-encode] [--wav] [-c EXT [EXT ...]] [--delete |
+                      --delete-excluded] [--fix-case] [-P [THREADS]]
+                      [--allow-parallel-io] [--parallel-copy THREADS]
+                      SRC DEST
 
 Mirror your FLAC audio library to a portable lossy Opus version
 
@@ -52,9 +68,8 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -v, --version         show program's version number and exit
-  -f, --force           disable safety checks and force continuing (default:
-                        False)
+  -v, --verbose         verbose output
+  -f, --force           disable safety checks and force continuing
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -62,44 +77,54 @@ Opus encoding options:
   to recreate all Opus files.
 
   -b, --bitrate KBPS    target bitrate in kbps of Opus files (integer in
-                        6-256) (default: 128)
-  --vbr                 use Opus variable bitrate mode (default: --vbr)
+                        6-256)
+  --vbr                 use Opus variable bitrate mode
   --cbr                 use Opus constrained variable bitrate mode
   --hard-cbr            use Opus hard constant bitrate mode
   --music               force Opus encoder to tune low bitrates for music
-                        (default: False)
   --speech              force Opus encoder to tune low bitrates for speech
-                        (default: False)
-  --downmix-mono        downmix to mono (default: False)
+  --downmix-mono        downmix to mono
   --downmix-stereo      downmix to stereo (if having more than 2 channels)
-                        (default: False)
 
 mirroring options:
-  --re-encode           force re-encoding of all Opus files (default: False)
-  --wav                 also encode WAV files to Opus files (default: False)
+  --re-encode           force re-encoding of all Opus files
+  --wav                 also encode WAV files (.wav extension) to Opus files
   -c, --copy EXT [EXT ...]
                         copy files whose extension is .EXT (case-insensitive)
-                        from SRC to DEST (default: None)
-  --delete              delete files of relevant extensions in DEST that are
-                        not in SRC (default: False)
-  --delete-excluded     delete any files in DEST that are not in SRC (default:
-                        False)
+                        from SRC to DEST
+  --delete              delete files with relevant extensions in DEST that are
+                        not in SRC
+  --delete-excluded     delete any files in DEST that are not in SRC
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystems that are case-insensitive)
-                        (default: False)
 
 concurrency options:
   -P, --parallel-encoding [THREADS]
                         enable parallel encoding with THREADS threads [THREADS
-                        = max(1, number of CPU cores - 1)] (default: None)
+                        = max(1, #CPUcores - 1)]
   --allow-parallel-io   disable mutual exclusion for disk I/O operations
                         during parallel encoding (not recommended for Hard
-                        Disk drives) (default: False)
+                        Disk drives)
   --parallel-copy THREADS
-                        concurrency of copy operations (default: 1)
+                        concurrency of copy operations
 
 A '--' is usable to terminate option parsing so remaining arguments are
 treated as positional arguments.
+```
+
+### Test
+
+`test` command is used to test the Opus encoder setup.
+It checks if the `opusenc` binary is available and if it can encode a test stream without errors.
+
+```txt
+usage: flacopyus test [-h] [-v]
+
+Examine Opus encoder setup
+
+options:
+  -h, --help     show this help message and exit
+  -v, --verbose  verbose output
 ```
 
 ## Known Issues
@@ -107,7 +132,35 @@ treated as positional arguments.
 - Requires a file system that supports nanosecond-precision modification times
 - Limited support for symbolic links
 
-## License
+## Notice Regarding Bundled Binaries
+
+This distribution includes prebuilt `opusenc` binary for Windows (x86/x64) from [the Opus-tools project](https://opus-codec.org/downloads/).
+These binaries are provided unmodified and are used as external utilities for Windows.
+
+### Opus-tools License
+
+Opus-tools, with the exception of `opusinfo` is available under the following two clause BSD-style license:
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+- Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+- Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+```txt
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## Flacopyus License
 
 GNU General Public License v3.0 or later
 
