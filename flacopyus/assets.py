@@ -1,6 +1,4 @@
-import contextlib
 import importlib.resources
-from pathlib import Path
 
 from . import __spec__ as spec
 
