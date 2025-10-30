@@ -51,6 +51,7 @@ apt install opus-tools
 ### Sync
 
 `sync` command is the main operation, which mirrors your FLAC audio library to a portable lossy Opus version.
+Consider using `-P` option for a large library to sped it up by parallel encoding.
 
 ```txt
 usage: flacopyus sync [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
