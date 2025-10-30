@@ -3,7 +3,7 @@
 Mirror your FLAC audio library to a portable lossy Opus version
 
 ```sh
-flacopyus sync FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
+flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
 ## Motivation
@@ -50,8 +50,8 @@ apt install opus-tools
 
 ### Sync
 
-`sync` command is the main operation, which mirrors your FLAC audio library to a portable lossy Opus version.
-Consider using `-P` option for a large library to sped it up by parallel encoding.
+The main operation is the `sync` command, which creates a lossy Opus version of your FLAC audio library.
+Consider using the `-P` option for large libraries to speed up the process by encoding in parallel.
 
 ```txt
 usage: flacopyus sync [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
