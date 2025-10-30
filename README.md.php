@@ -3,7 +3,7 @@
 Mirror your FLAC audio library to a portable lossy Opus version
 
 ```sh
-flacopyus FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
+flacopyus sync FLAC/ OPUS/ --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
 ## Motivation
