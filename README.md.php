@@ -3,6 +3,7 @@
 Mirror your FLAC audio library to a portable lossy Opus version
 
 ```sh
+# Encodes a FLAC library to Opus and mirrors them together with MP3 and M4A files
 flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
@@ -10,7 +11,7 @@ flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 
 Lossless audio libraries are often too large for mobile devices or cloud storage, so having a compact, portable duplicate is desirable.
 
-Flacopyus mirrors your lossless FLAC library to a portable Opus collection.
+Flacopyus is a CLI tool that mirrors your lossless FLAC library to a portable Opus collection.
 It performs rsync-like batch mirroring with incremental encoding/copying to save time.
 It preserves metadata and is idempotent, so repeated runs safely keep the destination in sync.
 
@@ -31,7 +32,7 @@ Python 3.14 or later is required.
 pip install flacopyus
 ```
 
-Currently, `opusenc` binary is included in the package only for Windows (x86/x64).
+`opusenc` binary is included in the package only for Windows (x86/x64).
 For other platforms, please install it manually and add it to the `PATH` environment variable, or use the appropriate package manager.
 
 ### Homebrew (macOS)
@@ -47,6 +48,8 @@ apt install opus-tools
 ```
 
 ## Usage
+
+The program is invoked either through `flacopyus` command, or via the Python main module option: `python3 -m flacopyus`.
 
 ### Sync
 
