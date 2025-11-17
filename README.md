@@ -57,8 +57,9 @@ The main operation is the `sync` command, which creates a lossy Opus version of 
 Consider using the `-P` option for large libraries to speed up the process by encoding in parallel.
 
 ```txt
-usage: flacopyus sync [-h] [-v] [-f] [-b KBPS] [--vbr | --cbr | --hard-cbr]
-                      [--music | --speech] [--downmix-mono | --downmix-stereo]
+usage: flacopyus sync [-h] [-v] [-f] [--opusenc EXE | --prefer-external]
+                      [-b KBPS] [--vbr | --cbr | --hard-cbr] [--music |
+                      --speech] [--downmix-mono | --downmix-stereo]
                       [--re-encode] [--wav] [-c EXT [EXT ...]] [--delete |
                       --delete-excluded] [--fix-case] [-P [THREADS]]
                       [--allow-parallel-io] [--parallel-copy THREADS]
@@ -74,6 +75,9 @@ options:
   -h, --help            show this help message and exit
   -v, --verbose         verbose output
   -f, --force           disable safety checks and force continuing
+  --opusenc EXE         specify an opusenc executable binary to use
+  --prefer-external     prefer an external binary instead of the internal one
+                        (Windows-only option)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -122,13 +126,16 @@ treated as positional arguments.
 It checks if the `opusenc` binary is available and if it can encode a test stream without errors.
 
 ```txt
-usage: flacopyus test [-h] [-v]
+usage: flacopyus test [-h] [-v] [--opusenc EXE | --prefer-external]
 
 Examine Opus encoder setup
 
 options:
-  -h, --help     show this help message and exit
-  -v, --verbose  verbose output
+  -h, --help         show this help message and exit
+  -v, --verbose      verbose output
+  --opusenc EXE      specify an opusenc executable binary to use
+  --prefer-external  prefer an external binary instead of the internal one
+                     (Windows-only option)
 ```
 
 ## Known Issues
