@@ -1,17 +1,14 @@
-import os
 import shutil
 import time
-import platform
 from pathlib import Path
-from contextlib import nullcontext
 from concurrent.futures import ThreadPoolExecutor, Future
 from .opus import OpusOptions, build_opusenc_func
 from .funs import filter_split
+from .spr import get_opusenc
 from .stdio import reprint, progress_bar, error_console
-from .assets import use_opusenc_binary_windows
 from .filesys import itreemap, itree, copy_mtime, sync_disk
 
-
+# TODO
 class Error:
     pass
 
@@ -23,7 +20,7 @@ def main(
     force: bool = False,
     opus_options: OpusOptions = OpusOptions(),
     re_encode: bool = False,
-    wav: bool,
+    wav: bool = False,
     delete: bool = False,
     delete_excluded: bool = False,
     copy_exts: list[str] = [],
@@ -31,16 +28,21 @@ def main(
     encoding_concurrency: bool | int | None = None,
     allow_parallel_io: bool = False,
     copying_concurrency: int = 1,
+    opusenc_executable: str | None = None,
+    prefer_external: bool = False,
     verbose: bool = False,
-):
-    # TODO: branch by platform
-    with (use_opusenc_binary_windows() if platform.system().lower() == "windows" else nullcontext()) as opusenc_binary:
+) -> int:
+    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
 
         encode = build_opusenc_func(
+            opusenc_binary,
             options=opus_options,
             use_lock=(not allow_parallel_io),
-            opusenc_binary=opusenc_binary,
         )
+
+
+
+
         delete = delete or delete_excluded
 
         copy_exts = [e.lower() for e in copy_exts]

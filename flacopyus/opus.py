@@ -4,7 +4,6 @@ from enum import StrEnum
 from dataclasses import dataclass
 from contextlib import nullcontext
 from threading import RLock
-from .spr import which
 from .filesys import sync_disk
 
 
@@ -32,12 +31,9 @@ class OpusOptions:
     downmix: Downmix | None = None
 
 
-def build_opusenc_func(options: OpusOptions, *, use_lock: bool = True, opusenc_binary: Path | None = None):
-    if opusenc_binary is None:
-        opusenc_bin = which("opusenc")
-    else:
-        opusenc_bin = str(opusenc_binary.resolve(strict=True))
-    cmd_line = [opusenc_bin, "--bitrate", str(options.bitrate)]
+def build_opusenc_func(opusenc_executable: Path, /,  options: OpusOptions, *,  use_lock: bool = True):
+    cmd_line = [str(opusenc_executable)]
+    cmd_line.append(["--bitrate", str(options.bitrate)])
     cmd_line.append(options.bitrate_mode.value)
     if options.low_bitrate_tuning is not None:
         cmd_line.append(options.low_bitrate_tuning.value)

@@ -42,9 +42,9 @@ def main(argv: list[str] | None = None) -> int:
 
         ParserStack(sync_parser, test_parser).add_argument("-v", "--verbose", action="store_true", help="verbose output")
         sync_parser.add_argument("-f", "--force", action="store_true", help="disable safety checks and force continuing")
-        # ps = ParserStack(sync_parser, test_parser).add_mutually_exclusive_group()
-        # ps.add_argument("--opusenc", type=some_string, help="specify an opusenc executable binary to use")
-        # ps.add_argument("--prefer-external", action="store_true", help="prefer an external binary instead of the internal one (Windows-only option)")
+        ps = ParserStack(sync_parser, test_parser).add_mutually_exclusive_group()
+        ps.add_argument("--opusenc", metavar="EXE", type=some_string, help="specify an opusenc executable binary to use")
+        ps.add_argument("--prefer-external", action="store_true", help="prefer an external binary instead of the internal one (Windows-only option)")
         sync_parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         sync_parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
 
@@ -74,7 +74,9 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
         concurrency_group = sync_parser.add_argument_group("concurrency options")
-        concurrency_group.add_argument("-P", "--parallel-encoding", metavar="THREADS", type=uint, nargs="?", const=0, help="enable parallel encoding with THREADS threads [THREADS = max(1, #CPUcores - 1)]")
+        concurrency_group.add_argument(
+            "-P", "--parallel-encoding", metavar="THREADS", type=uint, nargs="?", const=0, help="enable parallel encoding with THREADS threads [THREADS = max(1, #CPUcores - 1)]"
+        )
         concurrency_group.add_argument(
             "--allow-parallel-io", action="store_true", help="disable mutual exclusion for disk I/O operations during parallel encoding (not recommended for Hard Disk drives)"
         )
@@ -84,7 +86,11 @@ def main(argv: list[str] | None = None) -> int:
 
         match args.subcommand:
             case str() as cmd if cmd == test_cmd:
-                return test_main_func(verbose=args.verbose)
+                return test_main_func(
+                    opusenc_executable=args.opusenc,
+                    prefer_external=args.prefer_external,
+                    verbose=args.verbose,
+                    )
             case str() as cmd if cmd == sync_cmd:
                 return main_func(
                     src=Path(args.src),
@@ -104,6 +110,8 @@ def main(argv: list[str] | None = None) -> int:
                     encoding_concurrency=args.parallel_encoding,
                     allow_parallel_io=args.allow_parallel_io,
                     copying_concurrency=args.parallel_copy,
+                    opusenc_executable=args.opusenc,
+                    prefer_external=args.prefer_external,
                     verbose=args.verbose,
                 )
             case _:
