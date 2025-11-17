@@ -8,6 +8,7 @@ from .spr import get_opusenc
 from .stdio import reprint, progress_bar, error_console
 from .filesys import itreemap, itree, copy_mtime, sync_disk
 
+
 # TODO
 class Error:
     pass
@@ -33,15 +34,11 @@ def main(
     verbose: bool = False,
 ) -> int:
     with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
-
         encode = build_opusenc_func(
             opusenc_binary,
             options=opus_options,
             use_lock=(not allow_parallel_io),
         )
-
-
-
 
         delete = delete or delete_excluded
 

@@ -5,12 +5,14 @@ from contextlib import AbstractContextManager, nullcontext
 from .assets import use_opusenc_binary_windows
 from .stdio import reprint, red
 
+
 def which(cmd: str) -> str:
     match shutil.which(cmd):
         case None:
             raise RuntimeError(f"Command not found: '{cmd}'")
         case path:
             return path
+
 
 def get_opusenc(*, opusenc_executable: Path | None, prefer_external: bool = False) -> AbstractContextManager[Path]:
     if opusenc_executable is not None:

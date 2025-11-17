@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
                     opusenc_executable=args.opusenc,
                     prefer_external=args.prefer_external,
                     verbose=args.verbose,
-                    )
+                )
             case str() as cmd if cmd == sync_cmd:
                 return main_func(
                     src=Path(args.src),

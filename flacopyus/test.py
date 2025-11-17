@@ -9,7 +9,7 @@ def main(
     verbose: bool = False,
 ) -> int:
     # TODO: summary result
-    with get_opusenc( opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
+    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
         encode = build_opusenc_func(
             opusenc_binary,
             OpusOptions(),

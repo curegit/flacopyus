@@ -31,7 +31,7 @@ class OpusOptions:
     downmix: Downmix | None = None
 
 
-def build_opusenc_func(opusenc_executable: Path, /,  options: OpusOptions, *,  use_lock: bool = True):
+def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use_lock: bool = True):
     cmd_line = [str(opusenc_executable)]
     cmd_line.append(["--bitrate", str(options.bitrate)])
     cmd_line.append(options.bitrate_mode.value)
