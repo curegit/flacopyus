@@ -33,7 +33,7 @@ class OpusOptions:
 
 def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use_lock: bool = True):
     cmd_line = [str(opusenc_executable)]
-    cmd_line.append(["--bitrate", str(options.bitrate)])
+    cmd_line.extend(["--bitrate", str(options.bitrate)])
     cmd_line.append(options.bitrate_mode.value)
     if options.low_bitrate_tuning is not None:
         cmd_line.append(options.low_bitrate_tuning.value)
