@@ -79,6 +79,13 @@ def main(
                 case _:
                     raise TypeError()
 
+        def remove_symlink_from_dest(path: Path):
+                if delete:
+                    path.unlink()
+                    if path in  would_delete_flags:
+                        would_delete_flags[path] = False
+                else:
+                    raise FileExistsError(f"Destination {path} is a symlink but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
         def fix_case_file(path: Path):
             physical = path.resolve(strict=True)
             if physical.name != path.name:
@@ -88,7 +95,7 @@ def main(
             stat_s = s.stat()
             mtime_sec_or_ns = stat_s.st_mtime if modtime_window > 0 else stat_s.st_mtime_ns
             if d.is_symlink():
-                pass
+                remove_symlink_from_dest(d)
             # TODO: handle case where destination is a folder and conflicts
             if re_encode or not d.exists(follow_symlinks=False) or not is_updated(mtime_sec_or_ns, d):
                 if verbose:
@@ -147,7 +154,7 @@ def main(
     def ff_(s: Path, d: Path):
         # TODO: remove symlink
         if d.is_symlink():
-            pass
+            remove_symlink_from_dest(d)
         # TODO: handle case where destination is a folder and conflicts
         if not d.exists():
             copyfile_fsync(s, d)
