@@ -18,6 +18,7 @@ def main(
     opus_options: OpusOptions = OpusOptions(),
     re_encode: bool = False,
     wav: bool = False,
+    aiff: bool = False,
     delete: bool = False,
     delete_excluded: bool = False,
     copy_exts: list[str] = [],
@@ -39,14 +40,15 @@ def main(
         delete = delete or delete_excluded
 
         copy_exts = [e.lower() for e in copy_exts]
-
         extmap = {"flac": "opus"}
         if wav:
             extmap |= {"wav": "opus"}
-
+        if aiff:
+            extmap |= {"aif": "opus"}
+            extmap |= {"aiff": "opus"}
         for k in extmap:
             if k in copy_exts:
-                raise ValueError()
+                raise ValueError(f"Unable to copy .{k} files, which are supposed to be encoded.")
 
         # TODO: Check SRC and DEST tree overlap for safety
         # TODO: Check some flacs are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)

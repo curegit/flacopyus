@@ -70,6 +70,8 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group = sync_parser.add_argument_group("mirroring options")
         mirroring_group.add_argument("--re-encode", action="store_true", help="force re-encoding of all Opus files")
         mirroring_group.add_argument("--wav", action="store_true", help="also encode WAV files (.wav extension) to Opus files")
+        mirroring_group.add_argument("--aiff", action="store_true", help="also encode AIFF files (.aif/.aiff extension) to Opus files")
+
         mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=some_string, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete", action="store_true", help="delete files with relevant extensions in DEST that are not in SRC")
@@ -106,6 +108,7 @@ def main(argv: list[str] | None = None) -> int:
                     ),
                     re_encode=args.re_encode,
                     wav=args.wav,
+                    aiff=args.aiff,
                     copy_exts=([] if args.copy is None else args.copy),
                     delete=(args.delete or args.delete_excluded),
                     delete_excluded=args.delete_excluded,
