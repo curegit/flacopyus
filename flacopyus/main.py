@@ -21,6 +21,7 @@ def main(
     aiff: bool = False,
     delete: bool = False,
     delete_excluded: bool = False,
+    modtime_window: float = 0.0,
     copy_exts: list[str] = [],
     fix_case: bool = False,
     encoding_concurrency: bool | int | None = None,
@@ -64,6 +65,19 @@ def main(
                     ds = list(itree(dest, ext=["opus", *copy_exts]))
         will_del_dict: dict[Path, bool] = {p: True for p in ds}
 
+        # int stands for modification time in nanoseconds
+        # float stands for modification time in seconds
+        def is_updated(s: Path | int | float, d: Path):
+            match s:
+                case int() as ns:
+                    return abs(d.stat().st_mtime_ns - ns) <= modtime_window * 1e9
+                case float() as sec:
+                    return abs(d.stat().st_mtime - sec) <= modtime_window
+                case Path() as p:
+                    return is_updated(p.stat().st_mtime_ns, d)
+                case _:
+                    raise TypeError()
+
         def fix_case_file(path: Path):
             physical = path.resolve(strict=True)
             if physical.name != path.name:
@@ -71,16 +85,15 @@ def main(
 
         def cp_main(s: Path, d: Path):
             stat_s = s.stat()
-            s_ns = stat_s.st_mtime_ns
-            # TODO: remove symlink
+            mtime_sec_or_ns = stat_s.st_mtime if modtime_window > 0 else stat_s.st_mtime_ns
             if d.is_symlink():
                 pass
             # TODO: handle case where destination is a folder and conflicts
-            if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
+            if re_encode or not d.exists(follow_symlinks=False) or not is_updated(mtime_sec_or_ns, d):
                 if verbose:
                     reprint(str(s))
                 encode(s, d)
-                copy_mtime(s_ns, d)
+                copy_mtime(mtime_sec_or_ns, d)
             if fix_case:
                 fix_case_file(d)
             # TODO: Thread safe?
@@ -138,9 +151,10 @@ def main(
         if not d.exists():
             copyfile_fsync(s, d)
             copy_mtime(s, d)
-        if s.stat().st_mtime_ns != d.stat().st_mtime_ns or s.stat().st_size != d.stat().st_size:
+        mtime_sec_or_ns = s.stat().st_mtime if modtime_window > 0 else s.stat().st_mtime_ns
+        if  s.stat().st_size != d.stat().st_size or not is_updated(mtime_sec_or_ns, d):
             copyfile_fsync(s, d)
-            copy_mtime(s, d)
+            copy_mtime(mtime_sec_or_ns, d)
             if fix_case:
                 fix_case_file(d)
         will_del_dict[d] = False

@@ -24,13 +24,22 @@ def sync_disk(fd_like: io.IOBase | int, /):
     fsync_func()(fd)
 
 
-def copy_mtime(src: int | Path, dest: Path, /):
-    if isinstance(src, int):
-        src_ns = src
-    else:
-        src_ns = src.stat().st_mtime_ns
-    atime = time.time_ns()
-    os.utime(dest, ns=(atime, src_ns))
+# int stands for modification time in nanoseconds
+# float stands for modification time in seconds
+def copy_mtime(src: int | float | Path, dest: Path, /):
+    match src:
+        case int() as ns:
+            atime_ns = time.time_ns()
+            os.utime(dest, ns=(atime_ns, ns))
+        case float() as sec:
+            atime = time.time()
+            os.utime(dest, times=(atime, sec))
+        case Path() as p:
+            mtime_ns = p.stat().st_mtime_ns
+            atime_ns = time.time_ns()
+            os.utime(dest, ns=(atime_ns, mtime_ns))
+        case _:
+            raise TypeError()
 
 
 def itree(
