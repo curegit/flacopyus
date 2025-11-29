@@ -308,7 +308,6 @@ def itreemap[T](
     return exceptions_list
 
 
-
 def hashfile(file: Path | str | bytes, /, *, hash: str = "sha256") -> bytes:
     BUF_SIZE = 65536
     hash = hash.lower()
