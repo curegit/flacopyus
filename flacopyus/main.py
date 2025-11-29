@@ -137,7 +137,7 @@ def main(
             case _:
                 raise TypeError()
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
-            task = progress_display.add_task("Processing", total=len(pending))
+            task = progress_display.add_task("Traversing", total=len(pending))
             try:
                 for i, _ in enumerate( itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False)):
                     if i % 42  == 0:
@@ -169,7 +169,6 @@ def main(
                 sync_disk(d_fp)
 
     def ff_(s: Path, d: Path):
-        # TODO: remove symlink
         if d.is_symlink():
             remove_symlink_from_dest(d)
         # TODO: handle case where destination is a folder and conflicts
