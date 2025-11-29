@@ -10,11 +10,6 @@ from .stdio import reprint, progress_bar, error_console
 from .filesys import itreemap, itree, copy_mtime, sync_disk
 
 
-# TODO
-class Error:
-    pass
-
-
 def main(
     src: Path,
     dest: Path,
