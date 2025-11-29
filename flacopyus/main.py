@@ -229,7 +229,7 @@ def main(
         found_emp = None
         while found_emp is not False:
             found_emp = False
-            for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False):
+            for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False, progress=False):
                 if is_empty:
                     # TODO: remove symlink
                     if purge_dir or not s.exists() or not s.is_dir():
