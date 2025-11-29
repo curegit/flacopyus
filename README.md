@@ -60,7 +60,8 @@ Consider using the `-P` option for large libraries to speed up the process by en
 usage: flacopyus sync [-h] [-v] [-f] [--opusenc EXE | --prefer-external]
                       [-b KBPS] [--vbr | --cbr | --hard-cbr] [--music |
                       --speech] [--downmix-mono | --downmix-stereo]
-                      [--re-encode] [--wav] [-c EXT [EXT ...]] [--delete |
+                      [--re-encode] [--wav] [--aiff] [-c EXT [EXT ...]]
+                      [--modtime-window SECONDS] [--checksum] [--delete |
                       --delete-excluded] [--fix-case] [-P [THREADS]]
                       [--allow-parallel-io] [--parallel-copy THREADS]
                       SRC DEST
@@ -73,11 +74,13 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -v, --verbose         verbose output
-  -f, --force           disable safety checks and force continuing
-  --opusenc EXE         specify an opusenc executable binary to use
+  -v, --verbose         verbose output (default: False)
+  -f, --force           disable safety checks and force continuing (default:
+                        False)
+  --opusenc EXE         specify an opusenc executable binary to use (default:
+                        None)
   --prefer-external     prefer an external binary instead of the internal one
-                        (Windows-only option)
+                        (Windows-only option) (default: False)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -85,36 +88,51 @@ Opus encoding options:
   to recreate all Opus files.
 
   -b, --bitrate KBPS    target bitrate in kbps of Opus files (integer in
-                        6-256)
-  --vbr                 use Opus variable bitrate mode
+                        6-256) (default: 128)
+  --vbr                 use Opus variable bitrate mode (default: --vbr)
   --cbr                 use Opus constrained variable bitrate mode
   --hard-cbr            use Opus hard constant bitrate mode
   --music               force Opus encoder to tune low bitrates for music
+                        (default: False)
   --speech              force Opus encoder to tune low bitrates for speech
-  --downmix-mono        downmix to mono
+                        (default: False)
+  --downmix-mono        downmix to mono (default: False)
   --downmix-stereo      downmix to stereo (if having more than 2 channels)
+                        (default: False)
 
 mirroring options:
-  --re-encode           force re-encoding of all Opus files
+  --re-encode           force re-encoding of all Opus files (default: False)
   --wav                 also encode WAV files (.wav extension) to Opus files
+                        (default: False)
+  --aiff                also encode AIFF files (.aif/.aiff extension) to Opus
+                        files (default: False)
   -c, --copy EXT [EXT ...]
                         copy files whose extension is .EXT (case-insensitive)
-                        from SRC to DEST
+                        from SRC to DEST (default: None)
+  --modtime-window SECONDS
+                        modification time window in seconds which is used to
+                        determine if a file is updated (default requires exact
+                        modification time match) (default: 0.0)
+  --checksum            use checksum to determine if a file is need to copy
+                        instead of modification time-based comparison
+                        (default: False)
   --delete              delete files with relevant extensions in DEST that are
-                        not in SRC
-  --delete-excluded     delete any files in DEST that are not in SRC
+                        not in SRC (default: False)
+  --delete-excluded     delete any files in DEST that are not in SRC (default:
+                        False)
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystems that are case-insensitive)
+                        (default: False)
 
 concurrency options:
   -P, --parallel-encoding [THREADS]
                         enable parallel encoding with THREADS threads [THREADS
-                        = max(1, #CPUcores - 1)]
+                        = max(1, #CPUcores - 1)] (default: None)
   --allow-parallel-io   disable mutual exclusion for disk I/O operations
                         during parallel encoding (not recommended for Hard
-                        Disk drives)
+                        Disk drives) (default: False)
   --parallel-copy THREADS
-                        concurrency of copy operations
+                        concurrency of copy operations (default: 1)
 
 A '--' is usable to terminate option parsing so remaining arguments are
 treated as positional arguments.
@@ -132,16 +150,12 @@ Examine Opus encoder setup
 
 options:
   -h, --help         show this help message and exit
-  -v, --verbose      verbose output
-  --opusenc EXE      specify an opusenc executable binary to use
+  -v, --verbose      verbose output (default: False)
+  --opusenc EXE      specify an opusenc executable binary to use (default:
+                     None)
   --prefer-external  prefer an external binary instead of the internal one
-                     (Windows-only option)
+                     (Windows-only option) (default: False)
 ```
-
-## Known Issues
-
-- Requires a file system that supports nanosecond-precision modification times
-- Limited support for symbolic links
 
 ## Notice Regarding Bundled Binaries
 
