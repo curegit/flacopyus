@@ -79,7 +79,7 @@ def main(
             if re_encode or not d.exists(follow_symlinks=False) or s_ns != d.stat().st_mtime_ns:
                 if verbose:
                     reprint(str(s))
-                cp = encode(s, d)
+                encode(s, d)
                 copy_mtime(s_ns, d)
             if fix_case:
                 fix_case_file(d)

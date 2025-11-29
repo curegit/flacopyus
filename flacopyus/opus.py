@@ -58,6 +58,5 @@ def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use
                 dest_fp.write(cp.stdout)
                 dest_fp.flush()
                 sync_disk(dest_fp)
-        return cp
 
     return encode
