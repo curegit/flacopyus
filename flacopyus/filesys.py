@@ -2,6 +2,7 @@ import os
 import shutil
 import io
 import time
+import hashlib
 import functools
 import contextlib
 import rich.console
@@ -305,3 +306,31 @@ def itreemap[T](
             progress_display.update(copy_task, total=total_copy)
 
     return exceptions_list
+
+
+
+def hashfile(file: Path | str | bytes, /, *, hash: str = "sha256") -> bytes:
+    BUF_SIZE = 65536
+    hash = hash.lower()
+    match hash:
+        case "sha512":
+            sha = hashlib.sha512()
+        case "sha256":
+            sha = hashlib.sha256()
+        case "sha1":
+            sha = hashlib.sha1()
+        case "md5":
+            sha = hashlib.md5()
+        case _:
+            raise ValueError(f"Unsupported hash algorithm: {hash}")
+    if isinstance(file, bytes):
+        sha.update(file)
+    else:
+        with open(file, "rb") as fp:
+            while True:
+                data = fp.read(BUF_SIZE)
+                # True if EOF
+                if not data:
+                    break
+                sha.update(data)
+    return sha.digest()
