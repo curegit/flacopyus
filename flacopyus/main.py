@@ -125,7 +125,7 @@ def main(
                     with lock_for_encoding:
                         for_encoding.append(s)
                     if verbose:
-                        reprint(str(s))
+                        reprint(f"{s} -> {d} (Encoding)")
                     encode(s, d)
                     copy_mtime(mtime_sec_or_ns, d)
                 if fix_case:
@@ -194,6 +194,8 @@ def main(
             if not d.exists():
                 copyfile_fsync(s, d)
                 copy_mtime(s, d)
+                if verbose:
+                    reprint(f"{s} -> {d} (New file)")
             else:
                 mtime_sec_or_ns = s.stat().st_mtime if modtime_window > 0 else s.stat().st_mtime_ns
                 updated = s.stat().st_size == d.stat().st_size and is_updated(mtime_sec_or_ns, d)
@@ -207,6 +209,8 @@ def main(
                 if not updated:
                     copyfile_fsync(s, d)
                     copy_mtime(mtime_sec_or_ns, d)
+                    if verbose:
+                        reprint(f"{s} -> {d} (Updated file)")
             if fix_case:
                 fix_case_file(d)
             with lock_delete_flags:
