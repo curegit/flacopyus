@@ -203,8 +203,9 @@ def main(
             executor.shutdown(cancel_futures=True)
             raise
 
-    for p, is_deleted in will_del_dict.items():
-        if is_deleted:
+    # Deletion phase
+    for p, would_be_deleted in would_delete_flags.items():
+        if would_be_deleted:
             p.unlink()
 
     # TODO: parameterize
