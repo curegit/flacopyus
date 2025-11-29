@@ -2,6 +2,7 @@ import os
 import shutil
 import time
 from pathlib import Path
+from  threading import RLock
 from concurrent.futures import ThreadPoolExecutor, Future
 from .opus import OpusOptions, build_opusenc_func
 from .funs import filter_split
@@ -67,6 +68,7 @@ def main(
                 else:
                     dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts]))
         would_delete_flags: dict[Path, bool] = {p: True for p in dest_files_before}
+        lock_delete_flags = RLock()
 
         # int stands for modification time in nanoseconds
         # float stands for modification time in seconds
@@ -84,8 +86,9 @@ def main(
         def remove_symlink_from_dest(path: Path):
                 if delete:
                     path.unlink()
-                    if path in  would_delete_flags:
-                        would_delete_flags[path] = False
+                    with lock_delete_flags:
+                        if path in  would_delete_flags:
+                            would_delete_flags[path] = False
                 else:
                     raise FileExistsError(f"Destination {path} is a symlink but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
         def fix_case_file(path: Path):
@@ -101,17 +104,17 @@ def main(
                 remove_symlink_from_dest(d)
             # TODO: handle case where destination is a folder and conflicts
             if re_encode or not d.exists(follow_symlinks=False) or not is_updated(mtime_sec_or_ns, d):
-                # Thread safe?
                 is_for_encoding = True
-                for_encoding.append(s)
+                with lock_for_encoding:
+                    for_encoding.append(s)
                 if verbose:
                     reprint(str(s))
                 encode(s, d)
                 copy_mtime(mtime_sec_or_ns, d)
             if fix_case:
                 fix_case_file(d)
-            # TODO: Thread safe?
-            would_delete_flags[d] = False
+            with lock_delete_flags:
+                would_delete_flags[d] = False
             return is_for_encoding
 
         def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
@@ -122,6 +125,7 @@ def main(
 
         pending: list[tuple[Path, Future[bool]]] = []
         for_encoding: list[Path] = []
+        lock_for_encoding = RLock()
         poll = 0.1
         match encoding_concurrency:
             case bool() as b:
@@ -139,7 +143,8 @@ def main(
                     if i % 42  == 0:
                         progress_display.update(task, total=len(pending), refresh=True)
                 # Finish remaining tasks
-                task_e = progress_display.add_task("Encoding", total=len(for_encoding))
+                with lock_for_encoding:
+                    task_e = progress_display.add_task("Encoding", total=len(for_encoding))
                 done_encoding_count = 0
                 while pending:
                     time.sleep(poll)
@@ -185,7 +190,8 @@ def main(
             copy_mtime(mtime_sec_or_ns, d)
         if fix_case:
             fix_case_file(d)
-        would_delete_flags[d] = False
+        with lock_delete_flags:
+            would_delete_flags[d] = False
         return True
 
     def cp(pool, pending):
