@@ -64,9 +64,9 @@ def main(
         if delete:
             if dest.exists(follow_symlinks=False):
                 if delete_excluded:
-                    dest_files_before = list(itree(dest))
+                    dest_files_before = list(itree(dest, include_broken_symlinks=True, error_broken_symlinks=False))
                 else:
-                    dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts]))
+                    dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts], include_broken_symlinks=True, error_broken_symlinks=False))
         would_delete_flags: dict[Path, bool] = {p: True for p in dest_files_before}
         lock_delete_flags = RLock()
 
@@ -88,9 +88,25 @@ def main(
                     path.unlink()
                     with lock_delete_flags:
                         if path in  would_delete_flags:
-                            would_delete_flags[path] = False
+                            would_delete_flags.pop(path)
                 else:
                     raise FileExistsError(f"Destination {path} is a symlink but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
+
+        def remove_folder_from_dest(folder: Path):
+            if not delete:
+                raise FileExistsError(f"Destination {folder} is a folder but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
+            for p in itree(folder, include_broken_symlinks=True, error_broken_symlinks=False):
+                if p.is_symlink():
+                    remove_symlink_from_dest(p)
+                    continue
+                with lock_delete_flags:
+                    if p in would_delete_flags:
+                        p.unlink()
+                        would_delete_flags.pop(p)
+                    else:
+                        raise FileExistsError(f"Destination {p} is not in the deletion list. Try --delete-excluded to remove it.")
+            shutil.rmtree(folder)
+
         def fix_case_file(path: Path):
             physical = path.resolve(strict=True)
             if physical.name != path.name:
@@ -102,7 +118,8 @@ def main(
             mtime_sec_or_ns = stat_s.st_mtime if modtime_window > 0 else stat_s.st_mtime_ns
             if d.is_symlink():
                 remove_symlink_from_dest(d)
-            # TODO: handle case where destination is a folder and conflicts
+            if d.is_dir():
+                remove_folder_from_dest(d)
             if re_encode or not d.exists(follow_symlinks=False) or not is_updated(mtime_sec_or_ns, d):
                 is_for_encoding = True
                 with lock_for_encoding:
@@ -171,22 +188,24 @@ def main(
     def ff_(s: Path, d: Path):
         if d.is_symlink():
             remove_symlink_from_dest(d)
-        # TODO: handle case where destination is a folder and conflicts
+        if d.is_dir():
+            remove_folder_from_dest(d)
         if not d.exists():
             copyfile_fsync(s, d)
             copy_mtime(s, d)
-        mtime_sec_or_ns = s.stat().st_mtime if modtime_window > 0 else s.stat().st_mtime_ns
-        updated = s.stat().st_size == d.stat().st_size and is_updated(mtime_sec_or_ns, d)
-        if checksum:
-            updated_checksum = hashfile(s) == hashfile(d)
-            if updated_checksum and not updated:
-                updated = True
+        else:
+            mtime_sec_or_ns = s.stat().st_mtime if modtime_window > 0 else s.stat().st_mtime_ns
+            updated = s.stat().st_size == d.stat().st_size and is_updated(mtime_sec_or_ns, d)
+            if checksum:
+                updated_checksum = hashfile(s) == hashfile(d)
+                if updated_checksum and not updated:
+                    updated = True
+                    copy_mtime(mtime_sec_or_ns, d)
+                if not updated_checksum:
+                    updated = False
+            if not updated:
+                copyfile_fsync(s, d)
                 copy_mtime(mtime_sec_or_ns, d)
-            if not updated_checksum:
-                updated = False
-        if not updated:
-            copyfile_fsync(s, d)
-            copy_mtime(mtime_sec_or_ns, d)
         if fix_case:
             fix_case_file(d)
         with lock_delete_flags:
