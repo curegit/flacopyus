@@ -139,8 +139,8 @@ def main(
                         time.sleep(poll)
                         done, pending = filter_split(lambda x: x[1].done(), pending)
                         progress_display.update(task, advance=len(done), refresh=True)
-            except KeyboardInterrupt:
-                # Exit quickly when interrupted
+            except (KeyboardInterrupt, Exception):
+                # Exit quickly when interrupted/failed
                 executor.shutdown(cancel_futures=True)
                 raise
 
@@ -198,8 +198,8 @@ def main(
                         # Unwrap for collecting exceptions
                         fu.result()
                     progress_display.update(task, advance=len(done), refresh=True)
-        except KeyboardInterrupt:
-            # Exit quickly when interrupted
+        except (KeyboardInterrupt, Exception):
+            # Exit quickly when interrupted/failed
             executor.shutdown(cancel_futures=True)
             raise
 
