@@ -73,7 +73,7 @@ def main(argv: list[str] | None = None) -> int:
         mirroring_group.add_argument("--aiff", action="store_true", help="also encode AIFF files (.aif/.aiff extension) to Opus files")
         mirroring_group.add_argument("-c", "--copy", metavar="EXT", type=some_string, nargs="+", action="extend", help="copy files whose extension is .EXT (case-insensitive) from SRC to DEST")
         mirroring_group.add_argument("--modtime-window", metavar="SECONDS", type=ufloat, default=0.0, help="modification time window in seconds which is used to determine if a file is updated (default requires exact modification time match)")
-        mirroring_group.add_argument("--checksum", action="store_true", help="use checksum to determine if a file is updated instead of modification time-based comparison")
+        mirroring_group.add_argument("--checksum", action="store_true", help="use checksum to determine if a file is need to copy instead of modification time-based comparison")
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete", action="store_true", help="delete files with relevant extensions in DEST that are not in SRC")
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")
