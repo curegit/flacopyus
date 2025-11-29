@@ -22,7 +22,8 @@ def get_opusenc(*, opusenc_executable: Path | None, prefer_external: bool = Fals
             reprint(red(f"`opusenc` executable not found: '{opusenc_executable}'."))
             raise
     if not prefer_external:
-        # TODO: exclude ARM64 etc
+        # This does not distinguish between x86 and ARM64 Windows.
+        # But it sounds OK as Windows has x86 emulation for ARM64.
         if platform.system().lower() == "windows":
             return use_opusenc_binary_windows()
     try:
