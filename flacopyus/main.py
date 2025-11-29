@@ -32,6 +32,8 @@ def main(
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:
+  progress_display = progress_bar(error_console)
+  with progress_display:
     with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
         encode = build_opusenc_func(
             opusenc_binary,
@@ -57,14 +59,14 @@ def main(
         if not force:
             pass
 
-        ds: list[Path] = []
+        dest_files_before: list[Path] = []
         if delete:
             if dest.exists(follow_symlinks=False):
                 if delete_excluded:
-                    ds = list(itree(dest))
+                    dest_files_before = list(itree(dest))
                 else:
-                    ds = list(itree(dest, ext=["opus", *copy_exts]))
-        will_del_dict: dict[Path, bool] = {p: True for p in ds}
+                    dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts]))
+        would_delete_flags: dict[Path, bool] = {p: True for p in dest_files_before}
 
         # int stands for modification time in nanoseconds
         # float stands for modification time in seconds
@@ -91,13 +93,17 @@ def main(
             if physical.name != path.name:
                 physical.rename(path)
 
-        def cp_main(s: Path, d: Path):
+        def encode_task(s: Path, d: Path):
+            is_for_encoding = False
             stat_s = s.stat()
             mtime_sec_or_ns = stat_s.st_mtime if modtime_window > 0 else stat_s.st_mtime_ns
             if d.is_symlink():
                 remove_symlink_from_dest(d)
             # TODO: handle case where destination is a folder and conflicts
             if re_encode or not d.exists(follow_symlinks=False) or not is_updated(mtime_sec_or_ns, d):
+                # Thread safe?
+                is_for_encoding = True
+                for_encoding.append(s)
                 if verbose:
                     reprint(str(s))
                 encode(s, d)
@@ -105,16 +111,17 @@ def main(
             if fix_case:
                 fix_case_file(d)
             # TODO: Thread safe?
-            will_del_dict[d] = False
-            return True
+            would_delete_flags[d] = False
+            return is_for_encoding
 
         def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
             def f(s: Path, d: Path):
-                future = pool.submit(cp_main, s, d)
+                future = pool.submit(encode_task, s, d)
                 pending.append((s, future))
-
             return f
 
+        pending: list[tuple[Path, Future[bool]]] = []
+        for_encoding: list[Path] = []
         poll = 0.1
         match encoding_concurrency:
             case bool() as b:
@@ -124,21 +131,26 @@ def main(
             case None:
                 concurrency = 1
             case _:
-                raise ValueError()
-        pending: list[tuple[Path, Future[bool]]] = []
-
+                raise TypeError()
         with ThreadPoolExecutor(max_workers=concurrency) as executor:
+            task = progress_display.add_task("Processing", total=len(pending))
             try:
-                for _ in itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False):
-                    pass
+                for i, _ in enumerate( itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False)):
+                    if i % 42  == 0:
+                        progress_display.update(task, total=len(pending), refresh=True)
                 # Finish remaining tasks
-                progress_display = progress_bar(error_console)
-                task = progress_display.add_task("Processing", total=len(pending))
-                with progress_display:
-                    while pending:
-                        time.sleep(poll)
-                        done, pending = filter_split(lambda x: x[1].done(), pending)
-                        progress_display.update(task, advance=len(done), refresh=True)
+                task_e = progress_display.add_task("Encoding", total=len(for_encoding))
+                done_encoding_count = 0
+                while pending:
+                    time.sleep(poll)
+                    done, pending = filter_split(lambda x: x[1].done(), pending)
+                    for _, fut in done:
+                        # Unwrap first for collecting exceptions
+                        really_encoded = fut.result()
+                        if really_encoded:
+                            done_encoding_count += 1
+                    progress_display.update(task, advance=len(done), refresh=True)
+                    progress_display.update(task_e, completed=done_encoding_count, total=len(for_encoding), refresh=True)
             except (KeyboardInterrupt, Exception):
                 # Exit quickly when interrupted/failed
                 executor.shutdown(cancel_futures=True)
@@ -171,9 +183,9 @@ def main(
         if not is_updated:
             copyfile_fsync(s, d)
             copy_mtime(mtime_sec_or_ns, d)
-        will_del_dict[d] = False
         if fix_case:
             fix_case_file(d)
+        would_delete_flags[d] = False
         return True
 
     def cp(pool, pending):
@@ -188,16 +200,15 @@ def main(
         try:
             for _ in itreemap(cp(executor_cp, pending_cp), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
                 pass
-            progress_display = progress_bar(error_console)
-            task = progress_display.add_task("Copying", total=len(pending_cp))
-            with progress_display:
-                while pending_cp:
-                    time.sleep(poll)
-                    done, pending_cp = filter_split(lambda x: x[1].done(), pending_cp)
-                    for d, fu in done:
-                        # Unwrap for collecting exceptions
-                        fu.result()
-                    progress_display.update(task, advance=len(done), refresh=True)
+            task_c = progress_display.add_task("Copying", total=len(pending_cp))
+
+            while pending_cp:
+                time.sleep(poll)
+                done, pending_cp = filter_split(lambda x: x[1].done(), pending_cp)
+                for d, fu in done:
+                    # Unwrap for collecting exceptions
+                    fu.result()
+                progress_display.update(task_c, advance=len(done), refresh=True)
         except (KeyboardInterrupt, Exception):
             # Exit quickly when interrupted/failed
             executor.shutdown(cancel_futures=True)
