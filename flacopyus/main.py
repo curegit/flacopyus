@@ -171,9 +171,9 @@ def main(
         if not is_updated:
             copyfile_fsync(s, d)
             copy_mtime(mtime_sec_or_ns, d)
-            if fix_case:
-                fix_case_file(d)
         will_del_dict[d] = False
+        if fix_case:
+            fix_case_file(d)
         return True
 
     def cp(pool, pending):
