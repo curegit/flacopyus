@@ -34,11 +34,14 @@ def main(argv: list[str] | None = None) -> int:
         subparsers = parser.add_subparsers(dest="subcommand", required=True, help="subcommands")
         sync_parser = subparsers.add_parser(
             sync_cmd := "sync",
+            allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter,
             description="Mirror your FLAC audio library to a portable lossy Opus version",
             help="the main operation",
             epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
         )
-        test_parser = subparsers.add_parser(test_cmd := "test", description="Examine Opus encoder setup", help="examine Opus encoder setup")
+        test_parser = subparsers.add_parser(test_cmd := "test",
+        allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter,
+        description="Examine Opus encoder setup", help="examine Opus encoder setup")
 
         ParserStack(sync_parser, test_parser).add_argument("-v", "--verbose", action="store_true", help="verbose output")
         sync_parser.add_argument("-f", "--force", action="store_true", help="disable safety checks and force continuing")
