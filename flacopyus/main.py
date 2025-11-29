@@ -172,15 +172,15 @@ def main(
             copyfile_fsync(s, d)
             copy_mtime(s, d)
         mtime_sec_or_ns = s.stat().st_mtime if modtime_window > 0 else s.stat().st_mtime_ns
-        is_updated = s.stat().st_size == d.stat().st_size and is_updated(mtime_sec_or_ns, d)
+        updated = s.stat().st_size == d.stat().st_size and is_updated(mtime_sec_or_ns, d)
         if checksum:
-            is_updated_checksum = hashfile(s) == hashfile(d)
-            if is_updated_checksum and not is_updated:
-                is_updated = True
+            updated_checksum = hashfile(s) == hashfile(d)
+            if updated_checksum and not updated:
+                updated = True
                 copy_mtime(mtime_sec_or_ns, d)
-            if not is_updated_checksum:
-                is_updated = False
-        if not is_updated:
+            if not updated_checksum:
+                updated = False
+        if not updated:
             copyfile_fsync(s, d)
             copy_mtime(mtime_sec_or_ns, d)
         if fix_case:
