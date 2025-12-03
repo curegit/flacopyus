@@ -22,6 +22,8 @@ def main(
     aiff: bool = False,
     delete: bool = False,
     delete_excluded: bool = False,
+    delete_dir: bool = False,
+    purge_dir: bool = False,
     modtime_window: float = 0.0,
     checksum: bool = False,
     copy_exts: list[str] = [],
@@ -248,19 +250,21 @@ def main(
             if would_be_deleted:
                 p.unlink()
 
-        # TODO: parameterize
-        del_dir = True
-        purge_dir = True
-
-        try_del = set()
-
-        if del_dir or purge_dir:
-            found_emp = None
+        # Directory deletion phase
+        del_dir = delete_dir or purge_dir
+        try_del: set[Path] = set()
+        if del_dir:
+            found_emp: bool | None = None
             while found_emp is not False:
                 found_emp = False
                 for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False, progress=False):
                     if is_empty:
-                        # TODO: remove symlink
+                        if d.is_symlink():
+                            if d not in try_del:
+                                found_emp = True
+                                try_del.add(d)
+                                d.unlink()
+                                break
                         if purge_dir or not s.exists() or not s.is_dir():
                             if d not in try_del:
                                 found_emp = True

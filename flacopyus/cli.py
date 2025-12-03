@@ -84,6 +84,9 @@ def main(argv: list[str] | None = None) -> int:
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete", action="store_true", help="delete files with relevant extensions in DEST that are not in SRC")
         group.add_argument("--delete-excluded", action="store_true", help="delete any files in DEST that are not in SRC")
+        group = mirroring_group.add_mutually_exclusive_group()
+        group.add_argument("--delete-dir", action="store_true", help="delete empty directories in DEST that are not in SRC")
+        group.add_argument("--purge-dir", action="store_true", help="delete all empty directories in DEST")
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
 
         concurrency_group = sync_parser.add_argument_group("concurrency options")
