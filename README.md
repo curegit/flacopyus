@@ -32,7 +32,7 @@ Python 3.14 or later is required.
 pip install flacopyus
 ```
 
-`opusenc` binary is included in the package only for Windows (x86/x64).
+`opusenc` binary is included in the package only for Windows.
 For other platforms, please install it manually and add it to the `PATH` environment variable, or use the appropriate package manager.
 
 ### Homebrew (macOS)
