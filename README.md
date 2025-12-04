@@ -62,8 +62,9 @@ usage: flacopyus sync [-h] [-v] [-f] [--opusenc EXE | --prefer-external]
                       --speech] [--downmix-mono | --downmix-stereo]
                       [--re-encode] [--wav] [--aiff] [-c EXT [EXT ...]]
                       [--modtime-window SECONDS] [--checksum] [--delete |
-                      --delete-excluded] [--fix-case] [-P [THREADS]]
-                      [--allow-parallel-io] [--parallel-copy THREADS]
+                      --delete-excluded] [--delete-dir | --purge-dir]
+                      [--fix-case] [-P [THREADS]] [--allow-parallel-io]
+                      [--parallel-copy THREADS]
                       SRC DEST
 
 Mirror your FLAC audio library to a portable lossy Opus version
@@ -120,6 +121,9 @@ mirroring options:
                         not in SRC (default: False)
   --delete-excluded     delete any files in DEST that are not in SRC (default:
                         False)
+  --delete-dir          delete empty directories in DEST that are not in SRC
+                        (default: False)
+  --purge-dir           delete all empty directories in DEST (default: False)
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystems that are case-insensitive)
                         (default: False)
@@ -156,6 +160,11 @@ options:
   --prefer-external  prefer an external binary instead of the internal one
                      (Windows-only option) (default: False)
 ```
+
+## Limitations
+
+- Syncing across filesystems which have different naming case sensitivity may cause unexpected behavior.
+- It follows symlinks and handles its contents in the source directory, but does not transfer them as links in the destination directory.
 
 ## Notice Regarding Bundled Binaries
 
