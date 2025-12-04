@@ -31,7 +31,7 @@ def main(
     encoding_concurrency: bool | int | None = None,
     allow_parallel_io: bool = False,
     copying_concurrency: int = 1,
-    opusenc_executable: str | None = None,
+    opusenc_executable: Path | None = None,
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:

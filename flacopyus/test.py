@@ -1,10 +1,11 @@
+from pathlib import Path
 from .spr import get_opusenc
 from .opus import OpusOptions, build_opusenc_func
 
 
 def main(
     *,
-    opusenc_executable: str | None = None,
+    opusenc_executable: Path | None = None,
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:

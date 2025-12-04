@@ -103,7 +103,7 @@ def main(argv: list[str] | None = None) -> int:
         match args.subcommand:
             case str() as cmd if cmd == test_cmd:
                 return test_main_func(
-                    opusenc_executable=args.opusenc,
+                    opusenc_executable=(Path(args.opusenc) if args.opusenc is not None else None),
                     prefer_external=args.prefer_external,
                     verbose=args.verbose,
                 )
@@ -129,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
                     encoding_concurrency=args.parallel_encoding,
                     allow_parallel_io=args.allow_parallel_io,
                     copying_concurrency=args.parallel_copy,
-                    opusenc_executable=args.opusenc,
+                    opusenc_executable=(args.opusenc if args.opusenc is not None else None),
                     prefer_external=args.prefer_external,
                     verbose=args.verbose,
                 )
