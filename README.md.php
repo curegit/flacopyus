@@ -69,6 +69,9 @@ It checks if the `opusenc` binary is available and if it can encode a test strea
 <?= shell_exec("python3 -m flacopyus test --help") ?>
 ```
 
+## Limitations
+
+- Syncing across filesystems which have different naming case sensitivity may cause unexpected behavior.
 ## Notice Regarding Bundled Binaries
 
 This distribution includes prebuilt `opusenc` binary for Windows (x86/x64) from [the Opus-tools project](https://opus-codec.org/downloads/).

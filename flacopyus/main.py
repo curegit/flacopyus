@@ -271,7 +271,5 @@ def main(
                                 try_del.add(d)
                                 d.rmdir()
                                 break
-                            # TODO: 広いファイル名空間へのマッピング時にフォルダがのこる可能性あり
-                            pass
 
     return 0
