@@ -66,9 +66,9 @@ def main(
             if delete:
                 if dest.exists(follow_symlinks=False):
                     if delete_excluded:
-                        dest_files_before = list(itree(dest, include_broken_symlinks=True, error_broken_symlinks=False))
+                        dest_files_before = list(itree(dest, follow_symlinks=True, include_broken_symlinks=True, error_broken_symlinks=False))
                     else:
-                        dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts], include_broken_symlinks=True, error_broken_symlinks=False))
+                        dest_files_before = list(itree(dest, ext=[*list(set(extmap.values())), *copy_exts], follow_symlinks=True, include_broken_symlinks=True, error_broken_symlinks=False))
             would_delete_flags: dict[Path, bool] = {p: True for p in dest_files_before}
             lock_delete_flags = RLock()
 
@@ -97,7 +97,7 @@ def main(
             def remove_folder_from_dest(folder: Path):
                 if not delete:
                     raise FileExistsError(f"Destination {folder} is a folder but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
-                for p in itree(folder, include_broken_symlinks=True, error_broken_symlinks=False):
+                for p in itree(folder, follow_symlinks=False, include_broken_symlinks=True, error_broken_symlinks=False):
                     if p.is_symlink():
                         remove_symlink_from_dest(p)
                         continue
@@ -159,7 +159,21 @@ def main(
             with ThreadPoolExecutor(max_workers=concurrency) as executor:
                 task = progress_display.add_task("Traversing", total=len(pending))
                 try:
-                    for i, _ in enumerate(itreemap(cp_i(executor, pending), src, dest=dest, extmap=extmap, mkdir=True, mkdir_empty=False, fix_case=fix_case, progress=False)):
+                    for i, _ in enumerate(
+                        itreemap(
+                            cp_i(executor, pending),
+                            src,
+                            dest=dest,
+                            extmap=extmap,
+                            mkdir=True,
+                            mkdir_empty=False,
+                            fix_case=fix_case,
+                            follow_symlinks=True,
+                            include_broken_symlinks=False,
+                            error_broken_symlinks=False,
+                            progress=False,
+                        )
+                    ):
                         if i % 42 == 0:
                             progress_display.update(task, total=len(pending), refresh=True)
                     # Finish remaining tasks
@@ -229,7 +243,18 @@ def main(
         pending_cp: list[tuple[Path, Future[bool]]] = []
         with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
             try:
-                for _ in itreemap(cp(executor_cp, pending_cp), src, dest=dest, extmap=copy_exts, mkdir=True, mkdir_empty=False, progress=False):
+                for _ in itreemap(
+                    cp(executor_cp, pending_cp),
+                    src,
+                    dest=dest,
+                    extmap=copy_exts,
+                    mkdir=True,
+                    mkdir_empty=False,
+                    follow_symlinks=True,
+                    include_broken_symlinks=False,
+                    error_broken_symlinks=False,
+                    progress=False,
+                ):
                     pass
                 task_c = progress_display.add_task("Copying", total=len(pending_cp))
 
@@ -257,7 +282,18 @@ def main(
             found_emp: bool | None = None
             while found_emp is not False:
                 found_emp = False
-                for d, s, is_empty in itreemap(lambda d, s: not any(d.iterdir()), dest, src, file=False, directory=True, mkdir=False, progress=False):
+                for d, s, is_empty in itreemap(
+                    lambda d, s: not any(d.iterdir()),
+                    dest,
+                    src,
+                    file=False,
+                    directory=True,
+                    mkdir=False,
+                    follow_symlinks=True,
+                    include_broken_symlinks=False,
+                    error_broken_symlinks=False,
+                    progress=False,
+                ):
                     if is_empty:
                         if d.is_symlink():
                             if d not in try_del:

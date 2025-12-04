@@ -72,6 +72,8 @@ It checks if the `opusenc` binary is available and if it can encode a test strea
 ## Limitations
 
 - Syncing across filesystems which have different naming case sensitivity may cause unexpected behavior.
+- It follows symlinks and handles its contents in the source directory, but does not transfer them as links in the destination directory.
+
 ## Notice Regarding Bundled Binaries
 
 This distribution includes prebuilt `opusenc` binary for Windows (x86/x64) from [the Opus-tools project](https://opus-codec.org/downloads/).
