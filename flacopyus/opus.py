@@ -1,4 +1,5 @@
 import subprocess as sp
+from io import BytesIO
 from pathlib import Path
 from enum import StrEnum
 from dataclasses import dataclass
@@ -43,7 +44,7 @@ def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use
 
     lock = RLock()
 
-    def encode(src_file: Path, dest_opus_file: Path):
+    def encode(src_file: Path, dest_opus_file: Path | None):
         buf = None
         with open(src_file, "rb") as src_fp:
             if use_lock:
@@ -54,9 +55,11 @@ def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use
                 in_stream = src_fp
             cp = sp.run(cmd_line, text=False, input=buf, stdin=in_stream, capture_output=True, check=True)
         with lock if use_lock else nullcontext():
-            with open(dest_opus_file, "wb") as dest_fp:
-                dest_fp.write(cp.stdout)
-                dest_fp.flush()
-                sync_disk(dest_fp)
+            with BytesIO() if dest_opus_file is None else open(dest_opus_file, "wb") as dest_fp:
+                length = dest_fp.write(cp.stdout)
+                if not isinstance(dest_fp, BytesIO):
+                    dest_fp.flush()
+                    sync_disk(dest_fp)
+        return length
 
     return encode
