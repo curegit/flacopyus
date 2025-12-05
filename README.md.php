@@ -63,7 +63,7 @@ Consider using the `-P` option for large libraries to speed up the process by en
 ### Test
 
 `test` command is used to test the Opus encoder setup.
-It checks if the `opusenc` binary is available and if it can encode a test stream without errors.
+It checks if the `opusenc` binary is available and if it can encode test streams without errors.
 
 ```txt
 <?= shell_exec("python3 -m flacopyus test --help") ?>
