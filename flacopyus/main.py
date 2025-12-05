@@ -60,6 +60,25 @@ def main(
             if not src.exists(follow_symlinks=True) or not src.is_dir(follow_symlinks=True):
                 raise ValueError(f"Source directory {src} does not exist or is not a directory.")
 
+            # Check SRC and DEST tree overlap for safety
+            if not force:
+                src_resolved = src.resolve(strict=True)
+                dest_resolved = dest.resolve()
+                try:
+                    # If src is inside dest, relative_to will succeed and we should raise an error
+                    src_resolved.relative_to(dest_resolved, walk_up=False)
+                except ValueError:
+                    pass
+                else:
+                    raise RuntimeError(f"Source directory {src} is inside destination directory {dest}. This could cause data loss. Use --force to continue anyway.")
+                try:
+                    # If dest is inside src, relative_to will succeed and we should raise an error
+                    dest_resolved.relative_to(src_resolved, walk_up=False)
+                except ValueError:
+                    pass
+                else:
+                    raise RuntimeError(f"Destination directory {dest} is inside source directory {src}. This could cause data loss. Use --force to continue anyway.")
+
             # Check some FLAC/WAV/AIFF are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
             if not force:
                 # Check if there are any FLAC/WAV/AIFF files in src
