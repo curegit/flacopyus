@@ -59,8 +59,18 @@ def main(
 
             if not src.exists(follow_symlinks=True) or not src.is_dir(follow_symlinks=True):
                 raise ValueError(f"Source directory {src} does not exist or is not a directory.")
+
+            # Check some FLAC/WAV/AIFF are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
             if not force:
-                pass
+                # Check if there are any FLAC/WAV/AIFF files in src
+                has_flac_etc = False
+                for _ in itree(
+                    src, ext=[*extmap.keys()], recursive=True, file=True, directory=False, follow_symlinks=True, include_broken_symlinks=False, error_broken_symlinks=False, raises_on_error=False
+                ):
+                    has_flac_etc = True
+                    break
+                if not has_flac_etc:
+                    raise RuntimeError(f"No {', '.join(extmap.keys())} files found in source directory {src}. Did you swap SRC and DEST? Use --force to continue anyway.")
 
             dest_files_before: list[Path] = []
             if delete:
