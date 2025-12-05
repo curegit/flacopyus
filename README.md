@@ -145,12 +145,12 @@ treated as positional arguments.
 ### Test
 
 `test` command is used to test the Opus encoder setup.
-It checks if the `opusenc` binary is available and if it can encode a test stream without errors.
+It checks if the `opusenc` binary is available and if it can encode test streams without errors.
 
 ```txt
 usage: flacopyus test [-h] [-v] [--opusenc EXE | --prefer-external]
 
-Examine Opus encoder setup
+Examine Opus encoder setup and test encode functionality
 
 options:
   -h, --help         show this help message and exit
