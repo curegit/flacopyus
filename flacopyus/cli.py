@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
             epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
         )
         test_parser = subparsers.add_parser(
-            test_cmd := "test", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="Examine Opus encoder setup", help="examine Opus encoder setup"
+            test_cmd := "test", allow_abbrev=False, formatter_class=ArgumentDefaultsHelpFormatter, description="Examine Opus encoder setup and test encode functionality", help="examine Opus encoder setup and test encode functionality"
         )
 
         ParserStack(sync_parser, test_parser).add_argument("-v", "--verbose", action="store_true", help="verbose output")
