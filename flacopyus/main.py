@@ -57,8 +57,8 @@ def main(
                 if k in copy_exts:
                     raise ValueError(f"Unable to copy .{k} files, which are supposed to be encoded.")
 
-            # TODO: Check SRC and DEST tree overlap for safety
-            # TODO: Check some flacs are in SRC to avoid swapped SRC DEST disaster (unlimit with -f)
+            if not src.exists(follow_symlinks=True) or not src.is_dir(follow_symlinks=True):
+                raise ValueError(f"Source directory {src} does not exist or is not a directory.")
             if not force:
                 pass
 
