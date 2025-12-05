@@ -40,7 +40,7 @@ build-backend = "setuptools.build_meta"
 include = ["flacopyus*"]
 
 [tool.setuptools.package-data]
-flacopyus = ["bin/*"]
+flacopyus = ["bin/*", "audio/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "flacopyus.__version__"}
