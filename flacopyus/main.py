@@ -58,7 +58,7 @@ def main(
                     raise ValueError(f"Unable to copy .{k} files, which are supposed to be encoded.")
 
             if not src.exists(follow_symlinks=True) or not src.is_dir(follow_symlinks=True):
-                raise ValueError(f"Source directory {src} does not exist or is not a directory.")
+                raise FileNotFoundError(f"Source directory {src} does not exist or is not a directory.")
 
             # Check SRC and DEST tree overlap for safety
             if not force:
