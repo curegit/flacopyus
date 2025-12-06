@@ -111,6 +111,7 @@ def main(argv: list[str] | None = None) -> int:
                 return main_func(
                     src=Path(args.src),
                     dest=Path(args.dest),
+                    force=args.force,
                     opus_options=OpusOptions(
                         bitrate=args.bitrate,
                         bitrate_mode=args.bitrate_mode,
