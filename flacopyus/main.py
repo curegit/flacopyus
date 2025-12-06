@@ -303,6 +303,8 @@ def main(
         for p, would_be_deleted in would_delete_flags.items():
             if would_be_deleted:
                 p.unlink()
+                if verbose:
+                    reprint(f"{p} (Deleted)")
 
         # Directory deletion phase
         del_dir = delete_dir or purge_dir
