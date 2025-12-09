@@ -11,12 +11,12 @@ def main(
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:
-    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
+    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=verbose) as opusenc_binary:
         encode = build_opusenc_func(
             opusenc_binary,
             OpusOptions(),
         )
-        rprint("Opus encoder found")
+        rprint(f"Opus encoder found: {opusenc_binary}")
         rprint("Testing encode...")
         for src in get_test_streams():
             with src as src_file:
