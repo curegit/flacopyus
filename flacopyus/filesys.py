@@ -202,7 +202,7 @@ def itreemap[T](
                     # follow_symlinks=False のとき、ディレクトリへのリンクが混入する
                     if filepath.is_dir():
                         if directory:
-                            applydirs.append(filepath)
+                            applydirs.append((filepath, f))
                         continue
                     if filepath.suffix:
                         assert filepath.suffix[0] == os.extsep
@@ -218,7 +218,7 @@ def itreemap[T](
                         applypaths.append((filepath, f, ext))
             if directory:
                 for d in dirnames_copy:
-                    applydirs.append(rootpath / d)
+                    applydirs.append((rootpath / d, d))
             if mkdir or copypaths:
                 if (applypaths or copypaths or applydirs) or mkdir_empty:
                     if dry:
@@ -286,8 +286,8 @@ def itreemap[T](
                             progress_display.update(copy_task, advance=1)
                     finally:
                         total_copy += 1
-            for applydir in applydirs:
-                destdir = dest_rootpath / applydir
+            for applydir, dirname in applydirs:
+                destdir = dest_rootpath / dirname
                 if dry:
                     dry_run_dir(applydir, destdir)
                 else:
