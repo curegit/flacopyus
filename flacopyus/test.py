@@ -11,7 +11,7 @@ def main(
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:
-    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=verbose) as opusenc_binary:
+    with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=True) as opusenc_binary:
         encode = build_opusenc_func(
             opusenc_binary,
             OpusOptions(),

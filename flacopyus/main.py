@@ -37,7 +37,7 @@ def main(
 ) -> int:
     progress_display = progress_bar(error_console)
     with progress_display:
-        with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external) as opusenc_binary:
+        with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=verbose) as opusenc_binary:
             encode = build_opusenc_func(
                 opusenc_binary,
                 options=opus_options,
