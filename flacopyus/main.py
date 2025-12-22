@@ -205,6 +205,7 @@ def main(
                     ):
                         if i % 42 == 0:
                             progress_display.update(task, total=len(pending), refresh=True)
+                    progress_display.update(task, total=len(pending), refresh=True)
                     # Finish remaining tasks
                     with lock_for_encoding:
                         task_e = progress_display.add_task("Encoding", total=len(for_encoding))
