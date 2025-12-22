@@ -165,12 +165,12 @@ def main(
                     would_delete_flags[d] = False
                 return is_for_encoding
 
-            def cp_i(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
-                def f(s: Path, d: Path):
+            def make_encode_map(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
+                def encode_map(s: Path, d: Path):
                     future = pool.submit(encode_task, s, d)
                     pending.append((s, future))
 
-                return f
+                return encode_map
 
             pending: list[tuple[Path, Future[bool]]] = []
             for_encoding: list[Path] = []
@@ -190,7 +190,7 @@ def main(
                 try:
                     for i, _ in enumerate(
                         itreemap(
-                            cp_i(executor, pending),
+                            make_encode_map(executor, pending),
                             src,
                             dest=dest,
                             extmap=extmap,
@@ -203,6 +203,7 @@ def main(
                             progress=False,
                         )
                     ):
+                        # 42 is heuristic
                         if i % 42 == 0:
                             progress_display.update(task, total=len(pending), refresh=True)
                     progress_display.update(task, total=len(pending), refresh=True)
@@ -213,9 +214,9 @@ def main(
                     while pending:
                         time.sleep(poll)
                         done, pending = filter_split(lambda x: x[1].done(), pending)
-                        for _, fut in done:
+                        for _, future in done:
                             # Unwrap first for collecting exceptions
-                            really_encoded = fut.result()
+                            really_encoded = future.result()
                             if really_encoded:
                                 done_encoding_count += 1
                         progress_display.update(task, advance=len(done), refresh=True)
@@ -232,7 +233,7 @@ def main(
                     d_fp.flush()
                     sync_disk(d_fp)
 
-        def ff_(s: Path, d: Path):
+        def copy_task(s: Path, d: Path):
             if d.is_symlink():
                 remove_symlink_from_dest(d)
             if d.is_dir():
@@ -263,18 +264,18 @@ def main(
                 would_delete_flags[d] = False
             return True
 
-        def cp(pool, pending):
-            def f(s, d):
-                future = pool.submit(ff_, s, d)
+        def make_copy_map(pool, pending):
+            def copy_map(s, d):
+                future = pool.submit(copy_task, s, d)
                 pending.append((s, future))
 
-            return f
+            return copy_map
 
         pending_cp: list[tuple[Path, Future[bool]]] = []
         with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
             try:
                 for _ in itreemap(
-                    cp(executor_cp, pending_cp),
+                    make_copy_map(executor_cp, pending_cp),
                     src,
                     dest=dest,
                     extmap=copy_exts,
