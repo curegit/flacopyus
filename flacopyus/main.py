@@ -103,7 +103,7 @@ def main(
 
             # int stands for modification time in nanoseconds
             # float stands for modification time in seconds
-            def is_updated(s: Path | int | float, d: Path):
+            def is_updated(s: Path | int | float, d: Path, /):
                 match s:
                     case int() as ns:
                         return abs(d.stat().st_mtime_ns - ns) <= modtime_window * 1e9
@@ -114,7 +114,7 @@ def main(
                     case _:
                         raise TypeError()
 
-            def remove_symlink_from_dest(path: Path):
+            def remove_symlink_from_dest(path: Path, /):
                 if delete:
                     path.unlink()
                     with lock_delete_flags:
@@ -123,7 +123,7 @@ def main(
                 else:
                     raise FileExistsError(f"Destination {path} is a symlink but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
 
-            def remove_folder_from_dest(folder: Path):
+            def remove_folder_from_dest(folder: Path, /):
                 if not delete:
                     raise FileExistsError(f"Destination {folder} is a folder but deletion is not allowed. Use --delete or --delete-excluded to remove it.")
                 for p in itree(folder, follow_symlinks=False, include_broken_symlinks=True, error_broken_symlinks=False):
@@ -138,12 +138,12 @@ def main(
                             raise FileExistsError(f"Destination {p} is not in the deletion list. Try --delete-excluded to remove it.")
                 shutil.rmtree(folder)
 
-            def fix_case_file(path: Path):
+            def fix_case_file(path: Path, /):
                 physical = path.resolve(strict=True)
                 if physical.name != path.name:
                     physical.rename(path)
 
-            def encode_task(s: Path, d: Path):
+            def encode_task(s: Path, d: Path, /):
                 is_for_encoding = False
                 stat_s = s.stat()
                 mtime_sec_or_ns = stat_s.st_mtime if modtime_window > 0 else stat_s.st_mtime_ns
@@ -166,7 +166,7 @@ def main(
                 return is_for_encoding
 
             def make_encode_map(pool: ThreadPoolExecutor, pending: list[tuple[Path, Future[bool]]]):
-                def encode_map(s: Path, d: Path):
+                def encode_map(s: Path, d: Path, /):
                     future = pool.submit(encode_task, s, d)
                     pending.append((s, future))
 
@@ -226,14 +226,14 @@ def main(
                     executor.shutdown(cancel_futures=True)
                     raise
 
-        def copyfile_fsync(s: Path, d: Path):
+        def copyfile_fsync(s: Path, d: Path, /):
             with open(s, "rb") as s_fp:
                 with open(d, "wb") as d_fp:
                     shutil.copyfileobj(s_fp, d_fp)
                     d_fp.flush()
                     sync_disk(d_fp)
 
-        def copy_task(s: Path, d: Path):
+        def copy_task(s: Path, d: Path, /):
             if d.is_symlink():
                 remove_symlink_from_dest(d)
             if d.is_dir():
@@ -264,7 +264,7 @@ def main(
                 would_delete_flags[d] = False
             return True
 
-        def make_copy_map(pool, pending):
+        def make_copy_map(pool, pending, /):
             def copy_map(s, d):
                 future = pool.submit(copy_task, s, d)
                 pending.append((s, future))

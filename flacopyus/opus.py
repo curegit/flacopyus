@@ -52,7 +52,7 @@ def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use
 
     lock = RLock()
 
-    def encode(src_file: Path, dest_opus_file: Path | None):
+    def encode(src_file: Path, dest_opus_file: Path | None, /):
         buf = None
         with open(src_file, "rb") as src_fp:
             if use_lock:
