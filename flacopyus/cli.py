@@ -1,5 +1,5 @@
 from pathlib import Path
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS, _MutuallyExclusiveGroup
 from .main import main as main_func
 from .test import main as test_main_func
 from .opus import OpusOptions, BitrateMode, LowBitrateTuning, Downmix
@@ -8,7 +8,7 @@ from .args import uint, natural, ufloat, opus_bitrate, some_string
 
 
 class ParserStack:
-    def __init__(self, *parsers: ArgumentParser):
+    def __init__(self, *parsers: ArgumentParser | _MutuallyExclusiveGroup):
         self.parsers = parsers
 
     def add_argument(self, *args, **kwargs):
@@ -16,7 +16,7 @@ class ParserStack:
             parser.add_argument(*args, **kwargs)
 
     def add_mutually_exclusive_group(self, *args, **kwargs):
-        return ParserStack(*(parser.add_mutually_exclusive_group(*args, **kwargs) for parser in self.parsers))
+        return ParserStack(*(parser.add_mutually_exclusive_group(*args, **kwargs) for parser in self.parsers if isinstance(parser, ArgumentParser)))
 
 
 def main(argv: list[str] | None = None) -> int:
