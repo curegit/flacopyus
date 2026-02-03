@@ -20,7 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pip", "build", "twine", "ruff", "pyright", "types-pyinstaller"]
+dev = ["pip", "build", "twine", "ruff", "pyright[nodejs]", "types-pyinstaller"]
 
 [project.scripts]
 flacopyus = "flacopyus.cli:main"
