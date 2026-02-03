@@ -1,30 +1,38 @@
 import subprocess as sp
 from io import BytesIO
 from pathlib import Path
-from enum import StrEnum
+from enum import StrEnum, unique
 from dataclasses import dataclass
 from contextlib import nullcontext
 from threading import RLock
 from .filesys import sync_disk
+from typing import final
 
 
+@final
+@unique
 class BitrateMode(StrEnum):
     VBR = "--vbr"
     CBR = "--cbr"
     HardCBR = "--hard-cbr"
 
 
+@final
+@unique
 class LowBitrateTuning(StrEnum):
     Music = "--music"
     Speech = "--speech"
 
 
+@final
+@unique
 class Downmix(StrEnum):
     Mono = "--downmix-mono"
     Stereo = "--downmix-stereo"
 
 
-@dataclass(kw_only=True, frozen=True)
+@final
+@dataclass(kw_only=True, frozen=True, slots=True)
 class OpusOptions:
     bitrate: int = 128
     bitrate_mode: BitrateMode = BitrateMode.VBR
