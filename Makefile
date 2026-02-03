@@ -20,7 +20,6 @@ clean:
 	python3 -c 'import shutil; shutil.rmtree("dist", ignore_errors=True)'
 	python3 -c 'import shutil; shutil.rmtree("build", ignore_errors=True)'
 	python3 -c 'import shutil; shutil.rmtree("flacopyus.egg-info", ignore_errors=True)'
-	python3 -c 'import shutil; shutil.rmtree(".mypy_cache", ignore_errors=True)'
 	python3 -c 'import shutil; shutil.rmtree(".ruff_cache", ignore_errors=True)'
 
 format:
@@ -28,4 +27,4 @@ format:
 
 check:
 	-python3 -m ruff check
-	-python3 -m mypy flacopyus
+	-python3 -m pyright flacopyus
