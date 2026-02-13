@@ -221,7 +221,7 @@ def main(
                                 done_encoding_count += 1
                         progress_display.update(task, advance=len(done), refresh=True)
                         progress_display.update(task_e, completed=done_encoding_count, total=len(for_encoding), refresh=True)
-                except (KeyboardInterrupt, Exception):
+                except KeyboardInterrupt, Exception:
                     # Exit quickly when interrupted/failed
                     executor.shutdown(cancel_futures=True)
                     raise
@@ -296,7 +296,7 @@ def main(
                         # Unwrap for collecting exceptions
                         fu.result()
                     progress_display.update(task_c, advance=len(done), refresh=True)
-            except (KeyboardInterrupt, Exception):
+            except KeyboardInterrupt, Exception:
                 # Exit quickly when interrupted/failed
                 executor.shutdown(cancel_futures=True)
                 raise
