@@ -7,6 +7,8 @@ Mirror your FLAC audio library to a portable lossy Opus version
 flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
+![data flow animation of Flacopyus](images/FlacopyusFlow.png)
+
 ## Motivation
 
 Lossless audio libraries are often too large for mobile devices or cloud storage, so having a compact, portable duplicate is desirable.
