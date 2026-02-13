@@ -2,12 +2,12 @@
 
 Mirror your FLAC audio library to a portable lossy Opus version
 
+![data flow animation of Flacopyus](images/FlacopyusFlow.png)
+
 ```sh
 # Encodes a FLAC library to Opus and mirrors them together with MP3 and M4A files
 flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
-
-![data flow animation of Flacopyus](images/FlacopyusFlow.png)
 
 ## Motivation
 
