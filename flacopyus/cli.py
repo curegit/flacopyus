@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
         sync_parser.add_argument("-f", "--force", action="store_true", help="disable safety checks and force continuing")
         ps = ParserStack(sync_parser, test_parser).add_mutually_exclusive_group()
         ps.add_argument("--opusenc", metavar="EXE", type=some_string, help="specify an opusenc executable binary to use")
-        ps.add_argument("--prefer-external", action="store_true", help="prefer an external binary instead of the internal one (Windows-only option)")
+        ps.add_argument("--prefer-external", action="store_true", help="prefer an external binary instead of the internal one (effectively Windows-only option)")
         sync_parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         sync_parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
 
@@ -91,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete-dir", action="store_true", help="delete empty directories in DEST that are not in SRC")
         group.add_argument("--purge-dir", action="store_true", help="delete all empty directories in DEST")
-        mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystems that are case-insensitive)")
+        mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystem environments that are case-insensitive)")
 
         concurrency_group = sync_parser.add_argument_group("concurrency options")
         concurrency_group.add_argument(

@@ -73,8 +73,8 @@ It checks if the `opusenc` binary is available and if it can encode test streams
 
 ## Limitations
 
-- Syncing across filesystems which have different naming case sensitivity may cause unexpected behavior.
-- It follows symlinks and handles its contents in the source directory, but does not transfer them as links in the destination directory.
+- Syncing across filesystem environments which have different naming case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
+- It follows symlinks and handles its contents in the source directory, but does not transfer them as links to the destination directory.
 
 ## Notice Regarding Bundled Binaries
 

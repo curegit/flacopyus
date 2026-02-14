@@ -83,7 +83,7 @@ options:
   --opusenc EXE         specify an opusenc executable binary to use (default:
                         None)
   --prefer-external     prefer an external binary instead of the internal one
-                        (Windows-only option) (default: False)
+                        (effectively Windows-only option) (default: False)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -127,8 +127,8 @@ mirroring options:
                         (default: False)
   --purge-dir           delete all empty directories in DEST (default: False)
   --fix-case            fix file/directory name cases to match the source
-                        directory (for filesystems that are case-insensitive)
-                        (default: False)
+                        directory (for filesystem environments that are case-
+                        insensitive) (default: False)
 
 concurrency options:
   -P, --parallel-encoding [THREADS]
@@ -160,13 +160,13 @@ options:
   --opusenc EXE      specify an opusenc executable binary to use (default:
                      None)
   --prefer-external  prefer an external binary instead of the internal one
-                     (Windows-only option) (default: False)
+                     (effectively Windows-only option) (default: False)
 ```
 
 ## Limitations
 
-- Syncing across filesystems which have different naming case sensitivity may cause unexpected behavior.
-- It follows symlinks and handles its contents in the source directory, but does not transfer them as links in the destination directory.
+- Syncing across filesystem environments which have different naming case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
+- It follows symlinks and handles its contents in the source directory, but does not transfer them as links to the destination directory.
 
 ## Notice Regarding Bundled Binaries
 
