@@ -140,7 +140,7 @@ concurrency options:
   --parallel-copy THREADS
                         concurrency of copy operations (default: 1)
 
-A '--' is usable to terminate option parsing so remaining arguments are
+'--' can be used to terminate option parsing so remaining arguments are
 treated as positional arguments.
 ```
 

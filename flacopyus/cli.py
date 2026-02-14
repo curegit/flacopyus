@@ -38,7 +38,7 @@ def main(argv: list[str] | None = None) -> int:
             formatter_class=ArgumentDefaultsHelpFormatter,
             description="Mirror your FLAC audio library to a portable lossy Opus version",
             help="the main operation",
-            epilog="A '--' is usable to terminate option parsing so remaining arguments are treated as positional arguments.",
+            epilog="'--' can be used to terminate option parsing so remaining arguments are treated as positional arguments.",
         )
         test_parser = subparsers.add_parser(
             test_cmd := "test",
