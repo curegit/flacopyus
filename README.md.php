@@ -5,7 +5,7 @@ Mirror your FLAC audio library to a portable lossy Opus version
 ![data flow animation of Flacopyus](images/FlacopyusFlow.png)
 
 ```sh
-# Encodes a FLAC library to Opus and mirrors them together with MP3 and M4A files
+# Encodes a FLAC library to Opus and mirrors it together with MP3 and M4A files
 flacopyus sync FLAC/ OPUS/ -P --bitrate 128 --delete-excluded --copy mp3 m4a
 ```
 
@@ -73,8 +73,8 @@ It checks if the `opusenc` binary is available and if it can encode test streams
 
 ## Limitations
 
-- Syncing across filesystem environments which have different naming case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
-- It follows symlinks and handles its contents in the source directory, but does not transfer them as links to the destination directory.
+- Syncing across filesystem environments that differ in case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
+- It follows symlinks and processes their contents in the source directory, but does not recreate them as links in the destination directory.
 
 ## Notice Regarding Bundled Binaries
 
