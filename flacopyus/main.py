@@ -298,7 +298,7 @@ def main(
                     progress_display.update(task_c, advance=len(done), refresh=True)
             except KeyboardInterrupt, Exception:
                 # Exit quickly when interrupted/failed
-                executor.shutdown(cancel_futures=True)
+                executor_cp.shutdown(cancel_futures=True)
                 raise
 
         # Deletion phase
