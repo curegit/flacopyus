@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
                     encoding_concurrency=args.parallel_encoding,
                     allow_parallel_io=args.allow_parallel_io,
                     copying_concurrency=args.parallel_copy,
-                    opusenc_executable=(args.opusenc if args.opusenc is not None else None),
+                    opusenc_executable=(Path(args.opusenc) if args.opusenc is not None else None),
                     prefer_external=args.prefer_external,
                     verbose=args.verbose,
                 )
