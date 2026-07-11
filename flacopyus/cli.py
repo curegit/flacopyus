@@ -87,7 +87,7 @@ def main(argv: list[str] | None = None) -> int:
             metavar="SECONDS",
             type=ufloat,
             default=0.0,
-            help="modification time window in seconds which is used to determine if a file is updated (default requires exact modification time match)",
+            help="modification time window in seconds which is used to determine if a file is updated (the default requires exact modification time match)",
         )
         mirroring_group.add_argument("--checksum", action="store_true", help="use checksum to determine if a file is need to copy instead of modification time-based comparison")
         group = mirroring_group.add_mutually_exclusive_group()
