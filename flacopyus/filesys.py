@@ -231,10 +231,8 @@ def itreemap[T](
                         except Exception as e:
                             error_handler(e)
                         if fix_case:
-                            cur_root = rootpath
                             cur_dest_root = dest
                             for part in relatives.parts:
-                                cur_root = cur_root / part
                                 cur_dest_root = cur_dest_root / part
                                 try:
                                     if cur_dest_root.is_symlink():
