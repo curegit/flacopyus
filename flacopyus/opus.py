@@ -43,15 +43,19 @@ class OpusOptions:
     low_bitrate_tuning: LowBitrateTuning | None = None
     downmix: Downmix | None = None
 
+    def to_cmd_line_args(self, /) -> list[str]:
+        cmd_line = ["--bitrate", str(self.bitrate)]
+        cmd_line.append(self.bitrate_mode.value)
+        if self.low_bitrate_tuning is not None:
+            cmd_line.append(self.low_bitrate_tuning.value)
+        if self.downmix is not None:
+            cmd_line.append(self.downmix.value)
+        return cmd_line
+
 
 def build_opusenc_func(opusenc_executable: Path, /, options: OpusOptions, *, use_lock: bool = True):
     cmd_line = [str(opusenc_executable)]
-    cmd_line.extend(["--bitrate", str(options.bitrate)])
-    cmd_line.append(options.bitrate_mode.value)
-    if options.low_bitrate_tuning is not None:
-        cmd_line.append(options.low_bitrate_tuning.value)
-    if options.downmix is not None:
-        cmd_line.append(options.downmix.value)
+    cmd_line.extend(options.to_cmd_line_args())
     cmd_line.extend(["-", "-"])
 
     lock = RLock()
