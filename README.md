@@ -114,8 +114,8 @@ mirroring options:
                         from SRC to DEST (default: None)
   --modtime-window SECONDS
                         modification time window in seconds which is used to
-                        determine if a file is updated (default requires exact
-                        modification time match) (default: 0.0)
+                        determine if a file is updated (the default requires
+                        exact modification time match) (default: 0.0)
   --checksum            use checksum to determine if a file is need to copy
                         instead of modification time-based comparison
                         (default: False)
