@@ -1,5 +1,6 @@
+from typing import Any, Protocol
 from pathlib import Path
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS, _MutuallyExclusiveGroup
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS
 from .main import main as main_func
 from .test import main as test_main_func
 from .opus import OpusOptions, BitrateMode, LowBitrateTuning, Downmix
@@ -7,8 +8,12 @@ from .stdio import eprint
 from .args import uint, natural, ufloat, opus_bitrate, some_string
 
 
+class OptionContainer(Protocol):
+    def add_argument(self, *args: Any, **kwargs: Any) -> Any: ...
+
+
 class ParserStack:
-    def __init__(self, *parsers: ArgumentParser | _MutuallyExclusiveGroup):
+    def __init__(self, *parsers: ArgumentParser | OptionContainer):
         self.parsers = parsers
 
     def add_argument(self, *args, **kwargs):
