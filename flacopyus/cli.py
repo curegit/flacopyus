@@ -1,6 +1,6 @@
 from typing import Any, Protocol
 from pathlib import Path
-from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, SUPPRESS
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter, BooleanOptionalAction, SUPPRESS
 from .main import main as main_func
 from .test import main as test_main_func
 from .opus import OpusOptions, BitrateMode, LowBitrateTuning, Downmix
@@ -8,12 +8,12 @@ from .stdio import eprint
 from .args import uint, natural, ufloat, opus_bitrate, some_string
 
 
-class OptionContainer(Protocol):
+class ParserLike(Protocol):
     def add_argument(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 class ParserStack:
-    def __init__(self, *parsers: ArgumentParser | OptionContainer):
+    def __init__(self, *parsers: ArgumentParser | ParserLike):
         self.parsers = parsers
 
     def add_argument(self, *args, **kwargs):
@@ -96,6 +96,7 @@ def main(argv: list[str] | None = None) -> int:
         group = mirroring_group.add_mutually_exclusive_group()
         group.add_argument("--delete-dir", action="store_true", help="delete empty directories in DEST that are not in SRC")
         group.add_argument("--purge-dir", action="store_true", help="delete all empty directories in DEST")
+        mirroring_group.add_argument("--eliminate-links", action=BooleanOptionalAction, default=True, help="")
         mirroring_group.add_argument("--fix-case", action="store_true", help="fix file/directory name cases to match the source directory (for filesystem environments that are case-insensitive)")
 
         concurrency_group = sync_parser.add_argument_group("concurrency options")
@@ -137,6 +138,7 @@ def main(argv: list[str] | None = None) -> int:
                     delete_excluded=args.delete_excluded,
                     delete_dir=args.delete_dir,
                     purge_dir=args.purge_dir,
+                    eliminate_links=args.eliminate_links,
                     fix_case=args.fix_case,
                     encoding_concurrency=args.parallel_encoding,
                     allow_parallel_io=args.allow_parallel_io,
