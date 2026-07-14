@@ -65,6 +65,7 @@ usage: flacopyus sync [-h] [-v] [-f] [--opusenc EXE | --prefer-external]
                       [--re-encode] [--wav] [--aiff] [-c EXT [EXT ...]]
                       [--modtime-window SECONDS] [--checksum] [--delete |
                       --delete-excluded] [--delete-dir | --purge-dir]
+                      [--eliminate-dir-links | --no-eliminate-dir-links]
                       [--fix-case] [-P [THREADS]] [--allow-parallel-io]
                       [--parallel-copy THREADS]
                       SRC DEST
@@ -126,6 +127,10 @@ mirroring options:
   --delete-dir          delete empty directories in DEST that are not in SRC
                         (default: False)
   --purge-dir           delete all empty directories in DEST (default: False)
+  --eliminate-dir-links, --no-eliminate-dir-links
+                        delete symlinks to directories in DEST in advance so
+                        that it prevents deleting files outside of the DEST
+                        directory tree (default: True)
   --fix-case            fix file/directory name cases to match the source
                         directory (for filesystem environments that are case-
                         insensitive) (default: False)
