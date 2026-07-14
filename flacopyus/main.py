@@ -24,7 +24,7 @@ def main(
     delete_excluded: bool = False,
     delete_dir: bool = False,
     purge_dir: bool = False,
-    eliminate_links: bool = True,
+    eliminate_dir_links: bool = True,
     modtime_window: float = 0.0,
     checksum: bool = False,
     copy_exts: list[str] = [],
@@ -92,9 +92,9 @@ def main(
                 if not has_flac_etc:
                     raise RuntimeError(f"No {', '.join(extmap.keys())} files found in source directory {src}. Did you swap SRC and DEST? Use --force to continue anyway.")
 
-            if eliminate_links:
+            if eliminate_dir_links:
                 if dest.exists(follow_symlinks=False):
-                    for p in itree(dest, file=True, directory=True, follow_symlinks=False, include_broken_symlinks=True, error_broken_symlinks=False):
+                    for p in itree(dest, file=False, directory=True, follow_symlinks=False, include_broken_symlinks=False, error_broken_symlinks=False):
                         if p.is_symlink():
                             p.unlink()
 
