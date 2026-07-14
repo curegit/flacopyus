@@ -8,12 +8,12 @@ from .stdio import eprint
 from .args import uint, natural, ufloat, opus_bitrate, some_string
 
 
-class OptionContainer(Protocol):
+class ParserLike(Protocol):
     def add_argument(self, *args: Any, **kwargs: Any) -> Any: ...
 
 
 class ParserStack:
-    def __init__(self, *parsers: ArgumentParser | OptionContainer):
+    def __init__(self, *parsers: ArgumentParser | ParserLike):
         self.parsers = parsers
 
     def add_argument(self, *args, **kwargs):
