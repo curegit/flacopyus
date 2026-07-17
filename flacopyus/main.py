@@ -95,6 +95,7 @@ def main(
             if eliminate_dir_links:
                 if dest.exists(follow_symlinks=False):
                     for p in itree(dest, file=False, directory=True, follow_symlinks=False, include_broken_symlinks=False, error_broken_symlinks=False):
+                        # Note that Windows directory junctions are not reported by is_symlink() so they are not eliminated here
                         if p.is_symlink():
                             p.unlink()
 
