@@ -86,11 +86,13 @@ def itreemap[T](
     *,
     dry: bool = False,
     extmap: str | list[str] | dict[str, str] | None = None,
+    filename_remap: Callable[[Path], str] | None = None,
     recursive: bool = True,
     file: bool = True,
     directory: bool = False,
     copy_filtered_files: bool = False,
     copy_ext: str | list[str] | None = None,
+    copy_filename_remap: Callable[[Path], str] | None = None,
     mkdir: bool = True,
     mkdir_empty: bool = True,
     fix_case: bool = True,
@@ -251,6 +253,9 @@ def itreemap[T](
                 else:
                     new_ext = ext
                 destpath = (dest_rootpath / name).with_suffix(os.extsep + new_ext if new_ext else "")
+                if filename_remap is not None:
+                    dest_name = filename_remap(destpath)
+                    destpath = dest_rootpath / dest_name
                 if dry:
                     dry_run(applypath, destpath)
                 else:
@@ -266,6 +271,9 @@ def itreemap[T](
                         yield applypath, destpath, res
             for copypath, name, _ in copypaths:
                 destpath = dest_rootpath / name
+                if copy_filename_remap is not None:
+                    dest_name = copy_filename_remap(destpath)
+                    destpath = dest_rootpath / dest_name
                 if dry:
                     dry_run_copy(copypath, destpath)
                 else:
