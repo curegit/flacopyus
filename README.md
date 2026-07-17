@@ -172,6 +172,10 @@ options:
 
 - Syncing across filesystem environments that differ in case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
 - It follows symlinks and processes their contents in the source directory, but does not recreate them as links in the destination directory.
+- Multiple source files must not map to the same destination path.
+  For example, files with the same basename among the enabled lossless formats, or an encoded file and a copied `.opus` file with the same basename, conflict and the result is unspecified.
+- Directory symlinks and junctions followed from the source must form an acyclic tree and must not point into the destination directory.
+  Cyclic links can cause traversal to continue indefinitely.
 
 ## Notice Regarding Bundled Binaries
 
