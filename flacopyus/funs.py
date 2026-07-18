@@ -5,6 +5,10 @@ def greedy(*args, **kwargs):
     return greedy
 
 
+def icount[T](xs: Iterable[T], /) -> int:
+    return sum(1 for _ in xs)
+
+
 def filter_split[T](predicate: Callable[[T], bool], iterable: Iterable[T]):
     trues: list[T] = []
     falses: list[T] = []

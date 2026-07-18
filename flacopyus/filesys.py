@@ -8,7 +8,7 @@ import contextlib
 import rich.console
 from pathlib import Path
 from collections.abc import Generator, Callable
-from .funs import greedy
+from .funs import greedy, icount
 from .stdio import progress_bar, error_console
 
 
@@ -159,9 +159,8 @@ def itreemap[T](
     total_copy = 0
     progress_display = None
     if progress:
-        total = sum(
-            1
-            for _ in itree(
+        total = icount(
+            itree(
                 path,
                 ext=exts,
                 recursive=recursive,
