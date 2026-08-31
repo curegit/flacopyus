@@ -242,11 +242,15 @@ def main(
                     sync_disk(d_fp)
 
         def copy_task(s: Path, d: Path, /):
+            is_for_copying = False
             if d.is_symlink():
                 remove_symlink_from_dest(d)
             if d.is_dir():
                 remove_folder_from_dest(d)
             if not d.exists():
+                is_for_copying = True
+                with lock_for_copying:
+                    for_copying.append(s)
                 copyfile_fsync(s, d)
                 copy_mtime(s, d)
                 if verbose:
@@ -262,6 +266,9 @@ def main(
                     if not updated_checksum:
                         updated = False
                 if not updated:
+                    is_for_copying = True
+                    with lock_for_copying:
+                        for_copying.append(s)
                     copyfile_fsync(s, d)
                     copy_mtime(mtime_sec_or_ns, d)
                     if verbose:
@@ -270,7 +277,7 @@ def main(
                 fix_case_file(d)
             with lock_delete_flags:
                 would_delete_flags[d] = False
-            return True
+            return is_for_copying
 
         def make_copy_map(pool, pending, /):
             def copy_map(s, d):
@@ -280,34 +287,53 @@ def main(
             return copy_map
 
         pending_cp: list[tuple[Path, Future[bool]]] = []
-        with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
-            try:
-                for _ in itreemap(
-                    make_copy_map(executor_cp, pending_cp),
-                    src,
-                    dest=dest,
-                    extmap=copy_exts,
-                    mkdir=True,
-                    mkdir_empty=False,
-                    follow_symlinks=True,
-                    include_broken_symlinks=False,
-                    error_broken_symlinks=False,
-                    progress=False,
-                ):
-                    pass
-                task_c = progress_display.add_task("Copying", total=len(pending_cp))
-
-                while pending_cp:
-                    time.sleep(poll)
-                    done, pending_cp = filter_split(lambda x: x[1].done(), pending_cp)
-                    for d, fu in done:
-                        # Unwrap for collecting exceptions
-                        fu.result()
-                    progress_display.update(task_c, advance=len(done), refresh=True)
-            except KeyboardInterrupt, Exception:
-                # Exit quickly when interrupted/failed
-                executor_cp.shutdown(cancel_futures=True)
-                raise
+        for_copying: list[Path] = []
+        lock_for_copying = RLock()
+        if copy_exts:
+            with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
+                task_c = progress_display.add_task("Traversing (Copy)", total=len(pending_cp))
+                try:
+                    for i, _ in enumerate(
+                        itreemap(
+                            make_copy_map(executor_cp, pending_cp),
+                            src,
+                            dest=dest,
+                            extmap=copy_exts,
+                            mkdir=True,
+                            mkdir_empty=False,
+                            follow_symlinks=True,
+                            include_broken_symlinks=False,
+                            error_broken_symlinks=False,
+                            progress=False,
+                        )
+                    ):
+                        # 42 is heuristic
+                        if i % 42 == 0:
+                            progress_display.update(task_c, total=len(pending_cp), refresh=True)
+                    progress_display.update(task_c, total=len(pending_cp), refresh=True)
+                    # Finish remaining tasks
+                    with lock_for_copying:
+                        task_cp = progress_display.add_task("Copying", total=len(for_copying))
+                    done_copying_count = 0
+                    done_checking_count = 0
+                    while pending_cp:
+                        time.sleep(poll)
+                        done, pending_cp = filter_split(lambda x: x[1].done(), pending_cp)
+                        for _, fu in done:
+                            # Unwrap first for collecting exceptions
+                            really_copied = fu.result()
+                            if really_copied:
+                                done_copying_count += 1
+                        done_checking_count += len(done)
+                        progress_display.update(task_c, advance=len(done), refresh=True)
+                        progress_display.update(task_cp, completed=done_copying_count, total=len(for_copying), refresh=True)
+                    # Tell that skipped files are not missing but already up to date
+                    if skipped_count := done_checking_count - done_copying_count:
+                        progress_display.update(task_cp, description=f"Copying ({skipped_count} up-to-date)", refresh=True)
+                except KeyboardInterrupt, Exception:
+                    # Exit quickly when interrupted/failed
+                    executor_cp.shutdown(cancel_futures=True)
+                    raise
 
         # Deletion phase
         for p, would_be_deleted in would_delete_flags.items():
