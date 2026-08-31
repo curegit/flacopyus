@@ -304,6 +304,7 @@ def main(
                             extmap=copy_exts,
                             mkdir=True,
                             mkdir_empty=False,
+                            fix_case=fix_case,
                             follow_symlinks=True,
                             include_broken_symlinks=False,
                             error_broken_symlinks=False,
