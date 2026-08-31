@@ -36,6 +36,7 @@ def main(
     prefer_external: bool = False,
     verbose: bool = False,
 ) -> int:
+    summery_message: str = ""
     progress_display = progress_bar(error_console)
     with progress_display:
         with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=verbose) as opusenc_binary:
@@ -214,7 +215,8 @@ def main(
                         # 42 is heuristic
                         if i % 42 == 0:
                             progress_display.update(task, total=len(pending), refresh=True)
-                    progress_display.update(task, total=len(pending), refresh=True)
+                    total_traversed_count = len(pending)
+                    progress_display.update(task, total=total_traversed_count, refresh=True)
                     # Finish remaining tasks
                     with lock_for_encoding:
                         task_e = progress_display.add_task("Encoding", total=len(for_encoding))
@@ -229,6 +231,7 @@ def main(
                                 done_encoding_count += 1
                         progress_display.update(task, advance=len(done), refresh=True)
                         progress_display.update(task_e, completed=done_encoding_count, total=len(for_encoding), refresh=True)
+                    summery_message += f"{done_encoding_count} files encoded, {total_traversed_count - done_encoding_count} files already up-to-date"
                 except KeyboardInterrupt, Exception:
                     # Exit quickly when interrupted/failed
                     executor.shutdown(cancel_futures=True)
@@ -291,7 +294,7 @@ def main(
         lock_for_copying = RLock()
         if copy_exts:
             with ThreadPoolExecutor(max_workers=copying_concurrency) as executor_cp:
-                task_c = progress_display.add_task("Traversing (Copy)", total=len(pending_cp))
+                task_c = progress_display.add_task("Traversing (copy)", total=len(pending_cp))
                 try:
                     for i, _ in enumerate(
                         itreemap(
@@ -327,52 +330,53 @@ def main(
                         done_checking_count += len(done)
                         progress_display.update(task_c, advance=len(done), refresh=True)
                         progress_display.update(task_cp, completed=done_copying_count, total=len(for_copying), refresh=True)
-                    # Tell that skipped files are not missing but already up to date
-                    if skipped_count := done_checking_count - done_copying_count:
-                        progress_display.update(task_cp, description=f"Copying ({skipped_count} up-to-date)", refresh=True)
+                    summery_message += f"\n{len(for_copying)} files copied, {done_checking_count - done_copying_count} files already up-to-date"
                 except KeyboardInterrupt, Exception:
                     # Exit quickly when interrupted/failed
                     executor_cp.shutdown(cancel_futures=True)
                     raise
 
-        # Deletion phase
-        for p, would_be_deleted in would_delete_flags.items():
-            if would_be_deleted:
-                p.unlink()
-                if verbose:
-                    reprint(f"{p} (Deleted)")
+    # Deletion phase
+    for p, would_be_deleted in would_delete_flags.items():
+        if would_be_deleted:
+            p.unlink()
+            if verbose:
+                reprint(f"{p} (Deleted)")
 
-        # Directory deletion phase
-        del_dir = delete_dir or purge_dir
-        try_del: set[Path] = set()
-        if del_dir:
-            found_emp: bool | None = None
-            while found_emp is not False:
-                found_emp = False
-                for d, s, is_empty in itreemap(
-                    lambda d, s: not any(d.iterdir()),
-                    dest,
-                    src,
-                    file=False,
-                    directory=True,
-                    mkdir=False,
-                    follow_symlinks=True,
-                    include_broken_symlinks=False,
-                    error_broken_symlinks=False,
-                    progress=False,
-                ):
-                    if is_empty:
-                        if d.is_symlink():
-                            if d not in try_del:
-                                found_emp = True
-                                try_del.add(d)
-                                d.unlink()
-                                break
-                        if purge_dir or not s.exists() or not s.is_dir():
-                            if d not in try_del:
-                                found_emp = True
-                                try_del.add(d)
-                                d.rmdir()
-                                break
+    # Directory deletion phase
+    del_dir = delete_dir or purge_dir
+    try_del: set[Path] = set()
+    if del_dir:
+        found_emp: bool | None = None
+        while found_emp is not False:
+            found_emp = False
+            for d, s, is_empty in itreemap(
+                lambda d, s: not any(d.iterdir()),
+                dest,
+                src,
+                file=False,
+                directory=True,
+                mkdir=False,
+                follow_symlinks=True,
+                include_broken_symlinks=False,
+                error_broken_symlinks=False,
+                progress=False,
+            ):
+                if is_empty:
+                    if d.is_symlink():
+                        if d not in try_del:
+                            found_emp = True
+                            try_del.add(d)
+                            d.unlink()
+                            break
+                    if purge_dir or not s.exists() or not s.is_dir():
+                        if d not in try_del:
+                            found_emp = True
+                            try_del.add(d)
+                            d.rmdir()
+                            break
+
+    if summery_message:
+        reprint(summery_message)
 
     return 0
