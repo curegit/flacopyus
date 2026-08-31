@@ -37,6 +37,7 @@ def main(
     verbose: bool = False,
 ) -> int:
     summery_message: str = ""
+
     progress_display = progress_bar(error_console)
     with progress_display:
         with get_opusenc(opusenc_executable=opusenc_executable, prefer_external=prefer_external, verbose=verbose) as opusenc_binary:
@@ -338,11 +339,15 @@ def main(
                     raise
 
     # Deletion phase
+    done_deletion_count = 0
     for p, would_be_deleted in would_delete_flags.items():
         if would_be_deleted:
             p.unlink()
+            done_deletion_count += 1
             if verbose:
                 reprint(f"{p} (Deleted)")
+    if delete:
+        summery_message += f"\n{done_deletion_count} files deleted"
 
     # Directory deletion phase
     del_dir = delete_dir or purge_dir
