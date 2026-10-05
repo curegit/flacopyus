@@ -338,16 +338,16 @@ def main(
                     executor_cp.shutdown(cancel_futures=True)
                     raise
 
-    # Deletion phase
-    done_deletion_count = 0
-    for p, would_be_deleted in would_delete_flags.items():
-        if would_be_deleted:
-            p.unlink()
-            done_deletion_count += 1
-            if verbose:
-                reprint(f"{p} (Deleted)")
-    if delete:
-        summery_message += f"\n{done_deletion_count} files deleted"
+        # Deletion phase
+        done_deletion_count = 0
+        for p, would_be_deleted in would_delete_flags.items():
+            if would_be_deleted:
+                p.unlink()
+                done_deletion_count += 1
+                if verbose:
+                    reprint(f"{p} (Deleted)")
+        if delete:
+            summery_message += f"\n{done_deletion_count} files deleted"
 
     # Directory deletion phase
     del_dir = delete_dir or purge_dir
