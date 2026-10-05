@@ -48,6 +48,7 @@ def itree(
     *,
     ext: str | list[str] | None = None,
     recursive: bool = True,
+    max_depth: int | None = None,
     file: bool = True,
     directory: bool = False,
     follow_symlinks: bool = False,
@@ -63,6 +64,7 @@ def itree(
         path,
         extmap=ext,
         recursive=recursive,
+        max_depth=max_depth,
         file=file,
         directory=directory,
         copy_filtered_files=False,
@@ -88,6 +90,7 @@ def itreemap[T](
     extmap: str | list[str] | dict[str, str] | None = None,
     filename_remap: Callable[[Path], str] | None = None,
     recursive: bool = True,
+    max_depth: int | None = None,
     file: bool = True,
     directory: bool = False,
     copy_filtered_files: bool = False,
@@ -164,6 +167,7 @@ def itreemap[T](
                 path,
                 ext=exts,
                 recursive=recursive,
+                max_depth=max_depth,
                 file=file,
                 directory=directory,
                 follow_symlinks=follow_symlinks,
@@ -182,9 +186,9 @@ def itreemap[T](
             relatives = rootpath.relative_to(path, walk_up=False)
             dest_rootpath = dest / relatives
             dirnames_copy = [*dirnames]
-            if not recursive:
-                while dirnames:
-                    dirnames.pop()
+            depth = len(relatives.parts)
+            if not recursive or (max_depth is not None and depth >= max_depth):
+                dirnames.clear()
             applypaths = []
             copypaths = []
             applydirs = []
@@ -279,7 +283,11 @@ def itreemap[T](
                     if verbose:
                         dry_run_copy(copypath, destpath)
                     try:
-                        shutil.copy2(copypath, destpath, follow_symlinks=False)
+                        if not copypath.exists(follow_symlinks=True):
+                            # 壊れたリンク
+                            shutil.copy2(copypath, destpath, follow_symlinks=False)
+                        else:
+                            shutil.copy2(copypath, destpath, follow_symlinks=follow_symlinks)
                         if fix_case:
                             physical = destpath.resolve(strict=True)
                             if destpath.name != physical.name:
