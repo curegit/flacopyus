@@ -57,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         sync_parser.add_argument("-f", "--force", action="store_true", help="disable safety checks and force continuing")
         ps = ParserStack(sync_parser, test_parser).add_mutually_exclusive_group()
         ps.add_argument("--opusenc", metavar="EXE", type=some_string, help="specify an opusenc executable binary to use")
-        ps.add_argument("--prefer-external", action="store_true", help="prefer an external binary instead of the internal one (effectively Windows-only option)")
+        ps.add_argument("--prefer-external", action="store_true", help="prefer an external opusenc binary instead of the internal one (effectively Windows-only option)")
         sync_parser.add_argument("src", metavar="SRC", type=some_string, help="source directory containing FLAC files")
         sync_parser.add_argument("dest", metavar="DEST", type=some_string, help="destination directory saving Opus files")
 
