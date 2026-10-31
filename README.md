@@ -174,6 +174,8 @@ options:
   For example, files with the same basename among the enabled lossless formats, or an encoded file and a copied `.opus` file with the same basename, conflict and the result is unspecified.
 - Syncing across filesystem environments that differ in case sensitivity may cause unexpected behavior; file names may conflict in the destination directory, stale files may be left in the destination directory.
 - It follows symlinks and processes their contents in the source directory, but does not recreate them as links in the destination directory.
+- Windows directory junctions in the destination are intentionally not removed by `--eliminate-dir-links`.
+  They may still be traversed during synchronization, so writes and deletions can affect their targets outside the destination directory.
 - Directory symlinks and junctions followed from the source must form an acyclic tree and must not point into the destination directory.
   Cyclic links can cause traversal to continue indefinitely.
 
