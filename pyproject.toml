@@ -44,3 +44,9 @@ flacopyus = ["bin/*", "audio/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "flacopyus.__version__"}
+
+[tool.ruff]
+line-length = 200
+
+[tool.ruff.lint]
+select = ["F", "W", "UP"]

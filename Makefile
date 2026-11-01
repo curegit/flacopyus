@@ -23,7 +23,7 @@ clean:
 	python3 -c "import shutil; shutil.rmtree('.ruff_cache', ignore_errors=True)"
 
 format:
-	python3 -m ruff format --line-length=200
+	python3 -m ruff format
 
 check:
 	-python3 -m ruff check
