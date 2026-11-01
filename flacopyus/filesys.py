@@ -2,11 +2,14 @@ import os
 import shutil
 import io
 import time
+import tempfile
 import hashlib
 import functools
 import contextlib
 import rich.console
 from pathlib import Path
+from contextlib import AbstractContextManager, contextmanager
+from typing import IO
 from collections.abc import Generator, Callable
 from .funs import greedy, icount
 from .stdio import progress_bar, error_console
@@ -346,3 +349,24 @@ def hashfile(file: Path | str | bytes, /, *, hash: str = "sha256") -> bytes:
                     break
                 sha.update(data)
     return sha.digest()
+
+
+def temporary_file(*, binary: bool = True, parent: Path | str | None = None, suffix: str | None = None) -> AbstractContextManager[tuple[IO, Path]]:
+
+    @contextmanager
+    def temporaryfile():
+        fp = tempfile.NamedTemporaryFile(mode=("x+b" if binary else "x+"), dir=parent, suffix=suffix, delete_on_close=False, delete=True)
+        with fp:
+            yield fp, Path(fp.name)
+
+    return temporaryfile()
+
+
+def temporary_directory(*, parent: Path | str | None = None, prefix: str | None = None, suffix: str | None = None) -> AbstractContextManager[Path]:
+
+    @contextmanager
+    def temporarydirectory():
+        with tempfile.TemporaryDirectory(dir=parent, prefix=prefix, suffix=suffix, delete=True) as dirname:
+            yield Path(dirname)
+
+    return temporarydirectory()

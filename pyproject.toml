@@ -48,5 +48,9 @@ version = {attr = "flacopyus.__version__"}
 [tool.ruff]
 line-length = 200
 
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = 88
+
 [tool.ruff.lint]
 select = ["F", "W", "UP"]
