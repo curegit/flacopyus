@@ -83,8 +83,9 @@ options:
                         False)
   --opusenc EXE         specify an opusenc executable binary to use (default:
                         None)
-  --prefer-external     prefer an external binary instead of the internal one
-                        (effectively Windows-only option) (default: False)
+  --prefer-external     prefer an external opusenc binary instead of the
+                        internal one (effectively Windows-only option)
+                        (default: False)
 
 Opus encoding options:
   Note that changing these options will NOT trigger re-encoding of existing
@@ -164,8 +165,8 @@ options:
   -v, --verbose      verbose output (default: False)
   --opusenc EXE      specify an opusenc executable binary to use (default:
                      None)
-  --prefer-external  prefer an external binary instead of the internal one
-                     (effectively Windows-only option) (default: False)
+  --prefer-external  prefer an external opusenc binary instead of the internal
+                     one (effectively Windows-only option) (default: False)
 ```
 
 ## Limitations
