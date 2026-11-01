@@ -1,4 +1,4 @@
-.PHONY: build install devinstall preview publish clean format check
+.PHONY: build install devinstall preview publish clean format check test
 
 build: clean
 	php README.md.php > README.md
@@ -28,3 +28,6 @@ format:
 check:
 	-python3 -m ruff check
 	-python3 -m pyright flacopyus
+
+test:
+	python3 -X dev -m pytest --doctest-modules
