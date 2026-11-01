@@ -1,5 +1,7 @@
 # Flacopyus
 
+[![Unit Tests](https://github.com/curegit/flacopyus/actions/workflows/test.yml/badge.svg)](https://github.com/curegit/flacopyus/actions/workflows/test.yml)
+
 Mirror your FLAC audio library to a portable lossy Opus version
 
 ![data flow animation of Flacopyus](images/FlacopyusFlow.png)
