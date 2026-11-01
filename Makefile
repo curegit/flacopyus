@@ -21,13 +21,21 @@ clean:
 	python3 -c "import shutil; shutil.rmtree('build', ignore_errors=True)"
 	python3 -c "import shutil; shutil.rmtree('flacopyus.egg-info', ignore_errors=True)"
 	python3 -c "import shutil; shutil.rmtree('.ruff_cache', ignore_errors=True)"
+	python3 -c "import shutil; shutil.rmtree('.pytest_cache', ignore_errors=True)"
+	python3 -c "import shutil; shutil.rmtree('htmlcov', ignore_errors=True)"
+	python3 -c "import os, os.path; os.remove('.coverage') if os.path.isfile('.coverage') else None"
 
 format:
 	python3 -m ruff format
 
 check:
 	-python3 -m ruff check
-	-python3 -m pyright flacopyus
+	-python3 -m pyright flacopyus tests
 
 test:
 	python3 -X dev -m pytest --doctest-modules
+
+testcov:
+	python3 -X dev -m coverage run --source=flacopyus --branch -m pytest --doctest-modules
+	python3 -m coverage report -m
+	python3 -m coverage html
