@@ -29,13 +29,6 @@ def _library(stack: ExitStack) -> tuple[Path, Path, Path]:
     return src, linked[".flac"], linked[".wav"]
 
 
-def _write(stack: ExitStack, parent: Path, suffix: str, data: bytes) -> Path:
-    fp, path = stack.enter_context(temporary_file(parent=parent, suffix=suffix))
-    fp.write(data)
-    fp.flush()
-    return path
-
-
 class MainTest(TestCase):
     def test_encodes_flac_and_skips_unchanged(self):
         with ExitStack() as stack:
