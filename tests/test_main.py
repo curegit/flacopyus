@@ -86,8 +86,10 @@ class MainTest(TestCase):
                 self.assertEqual(main(src, dest), 0)
 
             opus = (dest / flac.name).with_suffix(".opus")
-            stale = _write(stack, dest, ".opus", b"stale")
-            kept = _write(stack, dest, ".txt", b"note")
+            stale = dest / "a.opus"
+            stale.write_bytes(b"stale")
+            kept = dest / "b.txt"
+            kept.write_bytes(b"note")
             empty = dest / "empty"
             empty.mkdir()
 
