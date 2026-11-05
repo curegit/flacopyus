@@ -29,13 +29,6 @@ def _library(stack: ExitStack) -> tuple[Path, Path, Path]:
     return src, linked[".flac"], linked[".wav"]
 
 
-def _write(stack: ExitStack, parent: Path, suffix: str, data: bytes) -> Path:
-    fp, path = stack.enter_context(temporary_file(parent=parent, suffix=suffix))
-    fp.write(data)
-    fp.flush()
-    return path
-
-
 class MainTest(TestCase):
     def test_encodes_flac_and_skips_unchanged(self):
         with ExitStack() as stack:
@@ -86,8 +79,10 @@ class MainTest(TestCase):
                 self.assertEqual(main(src, dest), 0)
 
             opus = (dest / flac.name).with_suffix(".opus")
-            stale = _write(stack, dest, ".opus", b"stale")
-            kept = _write(stack, dest, ".txt", b"note")
+            stale = dest / "a.opus"
+            stale.write_bytes(b"stale")
+            kept = dest / "b.txt"
+            kept.write_bytes(b"note")
             empty = dest / "empty"
             empty.mkdir()
 
